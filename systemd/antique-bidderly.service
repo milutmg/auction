@@ -1,0 +1,36 @@
+[Unit]
+Description=Antique Bidderly Application
+After=network.target
+Requires=postgresql.service
+
+[Service]
+Type=forking
+User=milan
+Group=milan
+WorkingDirectory=/home/milan/fyp/antique-bidderly-1
+Environment=NODE_ENV=development
+Environment=PORT=3001
+Environment=FRONTEND_URL=http://localhost:8080
+
+# Pre-start: Clear ports and ensure they're available
+ExecStartPre=/bin/bash -c 'lsof -ti:3001 | xargs kill -9 2>/dev/null || true'
+ExecStartPre=/bin/bash -c 'lsof -ti:8080 | xargs kill -9 2>/dev/null || true'
+ExecStartPre=/bin/sleep 2
+
+# Start the application using the existing script
+ExecStart=/home/milan/fyp/antique-bidderly-1/start_servers.sh
+ExecStop=/bin/bash -c 'lsof -ti:3001 | xargs kill -9 2>/dev/null || true; lsof -ti:8080 | xargs kill -9 2>/dev/null || true'
+
+# Restart policy
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=antique-bidderly
+
+[Install]
+WantedBy=default.target
