@@ -1,0 +1,199 @@
+
+> antique-bidderly-client@1.0.0 dev
+> vite --port 8080
+
+
+  VITE v5.4.10  ready in 167 ms
+
+  ➜  Local:   http://localhost:8080/
+  ➜  Network: http://192.168.1.80:8080/
+4:33:27 PM [vite] hmr update /src/pages/AdminDashboard.tsx, /src/index.css
+4:50:33 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+4:51:06 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+4:51:43 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+4:53:11 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+4:54:15 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+4:54:57 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/pages/Auctions.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/components/layout/Navbar.tsx, /src/index.css
+5:12:51 PM [vite] page reload src/components/layout/TestDropdown.tsx
+5:12:51 PM [vite] hmr update /src/pages/PaymentSuccess.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/index.css, /src/contexts/AuthContext.tsx, /src/pages/CreateAuction.tsx, /src/pages/UserDashboard.tsx, /src/pages/OrderDetails.tsx, /src/components/payment/EsewaPaymentButton.tsx
+5:12:51 PM [vite] page reload src/pages/PaymentFailure.tsx
+5:12:51 PM [vite] hmr update /src/pages/OrderDetails.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/App.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+5:12:51 PM [vite] page reload src/pages/OrderDetails_fixed.tsx
+5:12:51 PM [vite] hmr update /src/components/payment/EsewaPaymentButton.tsx, /src/index.css
+5:12:51 PM [vite] page reload src/pages/EnhancedAdminDashboard.tsx
+5:12:51 PM [vite] page reload src/pages/ModernAdminDashboard.tsx
+5:12:51 PM [vite] page reload src/pages/TestModernDashboard.tsx
+5:12:51 PM [vite] page reload src/pages/DiagnosticDashboard.tsx
+5:12:51 PM [vite] hmr update /src/pages/AuthCallback.tsx, /src/index.css
+5:12:51 PM [vite] page reload src/pages/SimpleModernDashboard.tsx
+5:12:51 PM [vite] hmr update /src/contexts/AuthContext.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/index.css, /src/contexts/SocketContext.tsx, /src/components/notifications/PaymentNotification.tsx, /src/components/notifications/NotificationCenter.tsx
+5:12:51 PM [vite] .env changed, restarting server...
+5:12:51 PM [vite] hmr update /src/pages/QuickPay.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/pages/PaymentForm.tsx, /src/index.css
+5:12:51 PM [vite] page reload src/components/debug/ConnectionStatus.tsx
+5:12:51 PM [vite] hmr update /src/pages/LiveBidding.tsx, /src/index.css
+5:12:51 PM [vite] vite.config.ts changed, restarting server...
+5:12:51 PM [vite] hmr update /src/pages/AdminDashboard.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/pages/Categories.tsx, /src/index.css
+5:12:51 PM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
+5:12:51 PM [vite] server restarted.
+6:09:58 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:17:06 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:17:20 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:21:30 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:21:43 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+6:22:38 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+6:27:46 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+6:27:52 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:28:24 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:28:39 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:28:47 PM [vite] hmr update /src/index.css, /src/contexts/AuthContext.tsx, /src/pages/CreateAuction.tsx, /src/pages/UserDashboard.tsx, /src/pages/OrderDetails.tsx, /src/components/payment/EsewaPaymentButton.tsx
+6:28:47 PM [vite] hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+6:28:47 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/auth/ProtectedRoute.tsx, /src/contexts/SocketContext.tsx, /src/pages/Auth.tsx, /src/pages/AuctionDetail.tsx, /src/pages/Auctions.tsx, /src/pages/Account.tsx, /src/pages/CreateAuction.tsx, /src/pages/LiveBidding.tsx, /src/components/demo/NotificationDemo.tsx, /src/pages/UserDashboard.tsx, /src/pages/CategoryDetail.tsx, /src/pages/Debug.tsx, /src/pages/PaymentForm.tsx, /src/pages/PaymentDashboard.tsx, /src/pages/AdminDashboard.tsx, /src/components/layout/Navbar.tsx, /src/components/user/UserProfileSimple.tsx, /src/components/bidding/LiveBiddingChat.tsx, /src/components/debug/ApiTest.tsx
+6:28:47 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+6:28:47 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+6:33:03 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:33:15 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+6:33:28 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+8:55:36 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:02:32 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:02:42 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:02:57 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:03:13 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:03:36 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:03:50 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:04:22 PM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+9:37:43 PM [vite] hmr update /src/contexts/SocketContext.tsx, /src/index.css
+9:37:43 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+9:37:43 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+11:03:58 AM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
+11:06:13 AM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
+11:06:20 AM [vite] hmr update /src/pages/Categories.tsx, /src/index.css
+11:06:30 AM [vite] hmr update /src/pages/Categories.tsx, /src/index.css
+11:19:57 AM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+11:27:23 AM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+11:28:02 AM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+11:32:08 AM [vite] hmr update /src/components/admin/BidApproval.tsx, /src/index.css
+11:32:22 AM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+11:52:56 AM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+11:54:06 AM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+11:54:14 AM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+11:55:37 AM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+11:56:53 AM [vite] hmr update /src/index.css, /src/components/ui/toaster.tsx, /src/contexts/SocketContext.tsx, /src/pages/AuthCallback.tsx, /src/pages/LiveBidding.tsx, /src/components/demo/NotificationDemo.tsx, /src/pages/OrderDetails.tsx, /src/components/notifications/PaymentNotification.tsx, /src/pages/Auth.tsx, /src/pages/AuctionDetail.tsx, /src/pages/Auctions.tsx, /src/pages/Account.tsx, /src/pages/CreateAuction.tsx, /src/pages/Categories.tsx, /src/pages/CategoryDetail.tsx, /src/components/layout/Footer.tsx, /src/components/auth/LoginForm.tsx, /src/components/auth/RegisterForm.tsx, /src/components/debug/ApiTest.tsx, /src/components/notifications/NotificationCenter.tsx, /src/components/bidding/LiveBiddingChat.tsx, /src/components/payment/EsewaPaymentButton.tsx, /src/components/admin/BidApproval.tsx
+11:56:53 AM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+11:56:53 AM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+11:57:00 AM [vite] hmr update /src/index.css, /src/components/ui/toaster.tsx, /src/contexts/SocketContext.tsx, /src/pages/AuthCallback.tsx, /src/pages/LiveBidding.tsx, /src/components/demo/NotificationDemo.tsx, /src/pages/OrderDetails.tsx, /src/components/notifications/PaymentNotification.tsx, /src/pages/Auth.tsx, /src/pages/AuctionDetail.tsx, /src/pages/Auctions.tsx, /src/pages/Account.tsx, /src/pages/CreateAuction.tsx, /src/pages/Categories.tsx, /src/pages/CategoryDetail.tsx, /src/components/layout/Footer.tsx, /src/components/auth/LoginForm.tsx, /src/components/auth/RegisterForm.tsx, /src/components/debug/ApiTest.tsx, /src/components/notifications/NotificationCenter.tsx, /src/components/bidding/LiveBiddingChat.tsx, /src/components/payment/EsewaPaymentButton.tsx, /src/components/admin/BidApproval.tsx
+11:57:00 AM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+11:57:00 AM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+12:00:58 PM [vite] hmr update /src/contexts/SocketContext.tsx, /src/index.css
+12:00:58 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+12:00:58 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+12:05:20 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:05:36 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:05:50 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:13:21 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:13:30 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:13:46 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:16:29 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:29:51 PM [vite] hmr update /src/pages/Categories.tsx, /src/index.css
+12:29:58 PM [vite] hmr update /src/pages/Categories.tsx, /src/index.css
+12:32:47 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:32:59 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:35:22 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:35:34 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+12:35:42 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:39:18 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:39:34 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:39:52 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:43:45 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:43:57 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:47:08 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+1:47:17 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+1:47:30 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+1:55:56 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:56:11 PM [vite] hmr update /src/pages/Auctions.tsx, /src/index.css
+1:57:45 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+1:57:53 PM [vite] hmr update /src/pages/Auctions.tsx, /src/index.css
+2:00:30 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:00:53 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:02:40 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:04:34 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:04:49 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:06:30 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:06:43 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:06:54 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:07:07 PM [vite] hmr update /src/pages/AuctionDetail.tsx, /src/index.css
+2:09:20 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:09:29 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:09:36 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:17:17 PM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
+2:19:00 PM [vite] hmr update /src/components/layout/Navbar.tsx, /src/index.css
+2:20:11 PM [vite] hmr update /src/App.tsx, /src/index.css
+2:23:14 PM [vite] hmr update /src/components/layout/Navbar.tsx, /src/index.css
+2:24:11 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:24:22 PM [vite] hmr update /src/App.tsx, /src/index.css
+2:27:27 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:27:37 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:28:17 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:28:26 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:28:35 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:28:42 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:30:05 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:31:33 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:31:41 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:32:04 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:32:11 PM [vite] hmr update /src/pages/CreateAuction.tsx, /src/index.css
+2:35:05 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:35:12 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:35:20 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:37:39 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:39:07 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:39:43 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:40:14 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:44:24 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:44:37 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+2:49:00 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+3:01:25 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+3:21:41 PM [vite] hmr update /src/index.css, /src/components/notifications/PaymentNotification.tsx, /src/contexts/SocketContext.tsx, /src/components/notifications/NotificationCenter.tsx
+3:21:41 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+3:21:41 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+3:22:17 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+3:22:44 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+3:25:33 PM [vite] hmr update /src/index.css, /src/contexts/AuthContext.tsx, /src/pages/CreateAuction.tsx, /src/pages/UserDashboard.tsx, /src/pages/OrderDetails.tsx, /src/components/payment/EsewaPaymentButton.tsx
+3:25:33 PM [vite] hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+3:25:33 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/auth/ProtectedRoute.tsx, /src/contexts/SocketContext.tsx, /src/pages/Auth.tsx, /src/pages/AuctionDetail.tsx, /src/pages/Auctions.tsx, /src/pages/Account.tsx, /src/pages/CreateAuction.tsx, /src/pages/LiveBidding.tsx, /src/components/demo/NotificationDemo.tsx, /src/pages/UserDashboard.tsx, /src/pages/CategoryDetail.tsx, /src/pages/Debug.tsx, /src/pages/PaymentForm.tsx, /src/pages/PaymentDashboard.tsx, /src/pages/AdminDashboard.tsx, /src/components/layout/Navbar.tsx, /src/components/user/UserProfileSimple.tsx, /src/components/bidding/LiveBiddingChat.tsx, /src/components/debug/ApiTest.tsx
+3:25:33 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+3:25:33 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+3:26:05 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+3:35:05 PM [vite] hmr update /src/components/layout/Navbar.tsx, /src/index.css
+3:37:00 PM [vite] hmr update /src/components/layout/Navbar.tsx, /src/index.css
+3:41:53 PM [vite] hmr update /src/index.css, /src/contexts/AuthContext.tsx, /src/pages/CreateAuction.tsx, /src/pages/UserDashboard.tsx, /src/pages/OrderDetails.tsx, /src/components/payment/EsewaPaymentButton.tsx
+3:41:53 PM [vite] hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+3:41:53 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/auth/ProtectedRoute.tsx, /src/contexts/SocketContext.tsx, /src/pages/Auth.tsx, /src/pages/AuctionDetail.tsx, /src/pages/Auctions.tsx, /src/pages/Account.tsx, /src/pages/CreateAuction.tsx, /src/pages/LiveBidding.tsx, /src/components/demo/NotificationDemo.tsx, /src/pages/UserDashboard.tsx, /src/pages/CategoryDetail.tsx, /src/pages/Debug.tsx, /src/pages/PaymentForm.tsx, /src/pages/PaymentDashboard.tsx, /src/pages/AdminDashboard.tsx, /src/components/layout/Navbar.tsx, /src/components/user/UserProfileSimple.tsx, /src/components/bidding/LiveBiddingChat.tsx, /src/components/debug/ApiTest.tsx
+3:41:53 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+3:41:53 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+3:42:47 PM [vite] hmr update /src/components/layout/Navbar.tsx, /src/index.css
+3:44:21 PM [vite] hmr update /src/App.tsx, /src/index.css
+3:46:21 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+3:47:03 PM [vite] hmr update /src/pages/UserDashboard.tsx, /src/index.css
+3:58:44 PM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
+3:59:12 PM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
+3:59:45 PM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
+4:07:37 PM [vite] hmr update /src/index.css, /src/contexts/AuthContext.tsx, /src/pages/CreateAuction.tsx, /src/pages/UserDashboard.tsx, /src/pages/OrderDetails.tsx, /src/components/payment/EsewaPaymentButton.tsx
+4:07:37 PM [vite] hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+4:07:37 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/auth/ProtectedRoute.tsx, /src/contexts/SocketContext.tsx, /src/pages/Auth.tsx, /src/pages/AuctionDetail.tsx, /src/pages/Auctions.tsx, /src/pages/Account.tsx, /src/pages/CreateAuction.tsx, /src/pages/LiveBidding.tsx, /src/components/demo/NotificationDemo.tsx, /src/pages/UserDashboard.tsx, /src/pages/CategoryDetail.tsx, /src/pages/Debug.tsx, /src/pages/PaymentForm.tsx, /src/pages/PaymentDashboard.tsx, /src/pages/AdminDashboard.tsx, /src/components/layout/Navbar.tsx, /src/components/user/UserProfileSimple.tsx, /src/components/bidding/LiveBiddingChat.tsx, /src/components/debug/ApiTest.tsx
+4:07:38 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+4:07:38 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+4:08:13 PM [vite] hmr update /src/index.css, /src/contexts/AuthContext.tsx, /src/pages/CreateAuction.tsx, /src/pages/UserDashboard.tsx, /src/pages/OrderDetails.tsx, /src/components/payment/EsewaPaymentButton.tsx
+4:08:13 PM [vite] hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+4:08:13 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/components/auth/ProtectedRoute.tsx, /src/contexts/SocketContext.tsx, /src/pages/Auth.tsx, /src/pages/AuctionDetail.tsx, /src/pages/Auctions.tsx, /src/pages/Account.tsx, /src/pages/CreateAuction.tsx, /src/pages/LiveBidding.tsx, /src/components/demo/NotificationDemo.tsx, /src/pages/UserDashboard.tsx, /src/pages/CategoryDetail.tsx, /src/pages/Debug.tsx, /src/pages/PaymentForm.tsx, /src/pages/PaymentDashboard.tsx, /src/pages/AdminDashboard.tsx, /src/components/layout/Navbar.tsx, /src/components/user/UserProfileSimple.tsx, /src/components/bidding/LiveBiddingChat.tsx, /src/components/debug/ApiTest.tsx
+4:08:13 PM [vite] hmr invalidate /src/contexts/SocketContext.tsx Could not Fast Refresh ("useSocket" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react-swc#consistent-components-exports
+4:08:13 PM [vite] hmr update /src/App.tsx, /src/index.css, /src/pages/LiveBidding.tsx, /src/components/bidding/LiveBiddingChat.tsx
+4:36:36 PM [vite] hmr update /src/pages/Auctions.tsx, /src/index.css
+4:37:07 PM [vite] hmr update /src/pages/CategoryDetail.tsx, /src/index.css
