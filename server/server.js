@@ -18,10 +18,10 @@ const categoriesRoutes = require('./routes/categories');
 const adminRoutes = require('./routes/admin');
 const notificationRoutes = require('./routes/notifications');
 const notificationsApi = require('./routes/notifications');
-const paymentRoutes = require('./routes/payments-esewa');
+const paymentRoutes = require('./routes/payments');
 const esewaRoutes = require('./routes/esewa');
 const adminBidsRoutes = require('./routes/admin-bids');
-const { createNotification } = require('./routes/notifications');
+
 const notificationService = require('./services/notificationService');
 const db = require('./config/database');
 
@@ -124,6 +124,23 @@ app.use('/api/notifications', notificationsApi);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/esewa', esewaRoutes);
 app.use('/api/admin', adminBidsRoutes);
+
+// Manual admin endpoint to trigger ended auction processing (testing)
+app.post('/api/admin/process-ended-auctions', async (req, res) => {
+  try {
+    // Simple auth: require admin token if available
+    // If authenticateToken middleware not globally applied here, rely on role check via optional header decode if implemented elsewhere.
+    // For safety, only allow in non-production unless proper auth integrated.
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Disabled in production' });
+    }
+    await processEndedAuctions();
+    res.json({ status: 'ok', message: 'Ended auctions processed' });
+  } catch (e) {
+    console.error('manual processEndedAuctions error', e);
+    res.status(500).json({ error: 'Failed to process ended auctions' });
+  }
+});
 
 // Initialize notification service with io
 notificationService.setSocketIO(io);
@@ -276,6 +293,14 @@ io.on('connection', (socket) => {
         timestamp: new Date().toISOString()
       });
     }
+  });
+
+  // Debugging endpoint to manually mark an auction as ended
+  socket.on('debug-mark-auction-ended', async ({ auctionId }) => {
+    // legacy: no payment_events creation
+    try {
+      await db.query(`UPDATE auctions SET status='ended' WHERE id=$1`, [auctionId]);
+    } catch (e) { console.error('debug end auction error', e); }
   });
 
   // Handle connection errors

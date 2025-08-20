@@ -10,7 +10,7 @@ import {
   Eye, AlertTriangle, Package, BarChart3, Clock, Star,
   ArrowUpRight, ArrowDownRight, Bell, RefreshCw, Download, 
   Calendar, Search, Filter, Settings, Plus, Minus,
-  CheckCircle, X
+  CheckCircle, X, FileText, Printer, SlidersHorizontal
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { socketService } from '@/services/socketService';
@@ -38,6 +38,7 @@ interface RecentActivity {
   amount?: number;
   time: string;
   status: 'success' | 'pending' | 'warning';
+  // created_at?: string; // normalized away; using time instead
 }
 
 interface TopPerformer {
@@ -80,38 +81,128 @@ const UserDashboard = () => {
   const [myAuctions, setMyAuctions] = useState([]);
   const [myAuctionsLoading, setMyAuctionsLoading] = useState(false);
   const [myAuctionsError, setMyAuctionsError] = useState<string | null>(null);
+  const [showAllActivity, setShowAllActivity] = useState(false); // Added for View All toggle
+  const [reportRange, setReportRange] = useState<'7d'|'30d'|'90d'>('30d');
+  const [lastExportAt, setLastExportAt] = useState<Date | null>(null);
+  const [performanceRange, setPerformanceRange] = useState<'7d'|'30d'|'90d'>('30d');
+  const [performanceData, setPerformanceData] = useState<Array<{ date: string; revenue: number; bids: number; users: number }>>([]);
+  const [activeSeries, setActiveSeries] = useState<{ revenue: boolean; bids: boolean; users: boolean }>({ revenue: true, bids: true, users: true });
+  const [hoverPoint, setHoverPoint] = useState<any>(null);
+  const [chartType, setChartType] = useState<'line'|'area'>('line');
+
+  // Reports enhancements state
+  const [customStart, setCustomStart] = useState<string>('');
+  const [customEnd, setCustomEnd] = useState<string>('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportMetrics, setReportMetrics] = useState<{activity:boolean; auctions:boolean; bids:boolean; revenue:boolean}>({activity:true, auctions:true, bids:true, revenue:true});
+  const [filteredType, setFilteredType] = useState<'all'|'bid'|'auction'|'user'|'payment'>('all');
+  const [reportSeries, setReportSeries] = useState<Array<{ label:string; values:number[] }>>([]);
 
   // Admin action handlers
   const handleExportData = async () => {
     try {
-      const reports = await apiService.getAdminReports('full_export');
-      // Create and download CSV/JSON file
+      const reports = await apiService.getAdminReports(`full_export?range=${reportRange}`);
       const blob = new Blob([JSON.stringify(reports, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `admin_report_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `report_${reportRange}_${new Date().toISOString().split('T')[0]}.json`;
       a.click();
       URL.revokeObjectURL(url);
+      setLastExportAt(new Date());
+      toast({ title: 'Export complete', description: 'JSON export downloaded.' });
     } catch (error) {
       console.error('Failed to export data:', error);
+      toast({ title: 'Export failed', description: 'Could not export data', variant: 'destructive' });
     }
   };
 
-  const handleManageUsers = () => {
-    // Navigate to user management or show user management modal
-    window.open('/auctions', '_blank'); // For now, open auctions page
+  const handleExportCSV = async () => {
+    try {
+      const data = await apiService.getAdminReports(`activity?range=${reportRange}`);
+      const rows = Array.isArray(data) ? data : (data.items || []);
+      if (!rows.length) {
+        toast({ title: 'No data', description: 'Nothing to export for selected range' });
+        return;
+      }
+      const headers = Object.keys(rows[0]);
+      const csv = [headers.join(','), ...rows.map(r => headers.map(h => JSON.stringify(r[h] ?? '')).join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `activity_${reportRange}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      setLastExportAt(new Date());
+      toast({ title: 'CSV ready', description: 'Activity CSV downloaded.' });
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'CSV export failed', description: 'Try again later', variant: 'destructive' });
+    }
   };
 
-  const handleModeration = () => {
-    // Navigate to moderation panel
-    window.open('/auctions', '_blank'); // For now, open auctions page
+  const handleGeneratePDF = () => {
+    // Simple print-based PDF generation placeholder
+    toast({ title: 'Generating PDF', description: 'Use browser print dialog to save.' });
+    setTimeout(() => window.print(), 400);
   };
 
   const handleReports = () => {
-    // Navigate to reports page
-    window.open('/auctions', '_blank'); // For now, open auctions page
+    window.open('/reports', '_blank');
   };
+
+  const handleScheduleReport = () => {
+    toast({ title: 'Scheduled (demo)', description: `Weekly report for range ${reportRange} scheduled.` });
+  };
+
+  const toggleReportMetric = (key: keyof typeof reportMetrics) => {
+    setReportMetrics(m => ({...m, [key]: !m[key]}));
+  };
+
+  const fetchDynamicReportData = async () => {
+    setReportLoading(true);
+    try {
+      // simulate API aggregation
+      await new Promise(r => setTimeout(r, 500));
+      const days = reportRange === '7d' ? 7 : reportRange === '30d' ? 30 : 90;
+      const mk = (base:number) => Array.from({length: days}, (_,i)=> Math.max(0, Math.round(base * (0.9 + Math.random()*0.2))));
+      const series: Array<{label:string; values:number[]}> = [];
+      if (reportMetrics.activity) series.push({ label: 'Activity', values: mk(recentActivity.length / Math.max(1, days/4)) });
+      if (reportMetrics.auctions) series.push({ label: 'Auctions', values: mk(myAuctions.length || 5) });
+      if (reportMetrics.bids) series.push({ label: 'Bids', values: mk(stats.total_bids / Math.max(1, days/3)) });
+      if (reportMetrics.revenue) series.push({ label: 'Revenue', values: mk((stats.revenue||1000) / Math.max(1, days/2)) });
+      setReportSeries(series);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDynamicReportData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportRange, reportMetrics.activity, reportMetrics.auctions, reportMetrics.bids, reportMetrics.revenue, recentActivity.length, myAuctions.length, stats.total_bids, stats.revenue]);
+
+  // Generate synthetic performance trend data (placeholder until real API endpoint)
+  useEffect(() => {
+    const days = performanceRange === '7d' ? 7 : performanceRange === '30d' ? 30 : 90;
+    const today = new Date();
+    const baseRev = stats.revenue || 1000;
+    const baseBids = stats.total_bids || 200;
+    const baseUsers = stats.total_users || 50;
+    const newData: any[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today.getTime() - i * 86400000);
+      const factor = 1 + Math.sin(i / 3) * 0.05 + (Math.random() - 0.5) * 0.08;
+      newData.push({
+        date: d.toISOString().split('T')[0].slice(5),
+        revenue: Math.max(0, Math.round((baseRev / days) * factor)),
+        bids: Math.max(0, Math.round((baseBids / days) * (factor + 0.05))),
+        users: Math.max(0, Math.round((baseUsers / days) * (factor + 0.02)))
+      });
+    }
+    setPerformanceData(newData);
+  }, [performanceRange, stats.revenue, stats.total_bids, stats.total_users]);
 
   // Initialize dashboard data immediately (no API calls for faster loading)
   useEffect(() => {
@@ -250,6 +341,42 @@ const UserDashboard = () => {
       sock.off('auction-rejected', handleRejected);
     };
   }, []);
+
+  useEffect(() => {
+    const sock = socketService.getSocket();
+    if (!sock) return;
+    const payReq = (d:any) => {
+      if (user && d.userId === user.id) {
+        const activity: RecentActivity = {
+          id: `payreq-${d.auctionId}`,
+          type: 'payment',
+          title: `Payment required for ${d.title}`,
+          user: user.full_name || 'You',
+          amount: d.amount,
+          time: new Date().toLocaleTimeString(),
+          status: 'pending'
+        };
+        setRecentActivity(prev => [activity, ...prev].slice(0,20));
+      }
+    };
+    const payComp = (d:any) => {
+      if (user && d.userId === user.id) {
+        const activity: RecentActivity = {
+          id: `paycomp-${d.auctionId}`,
+          type: 'payment',
+          title: `Payment completed for ${d.auctionId}`,
+          user: user.full_name || 'You',
+          amount: d.amount,
+          time: new Date().toLocaleTimeString(),
+          status: 'success'
+        };
+        setRecentActivity(prev => [activity, ...prev].slice(0,20));
+      }
+    };
+    sock.on('payment-required', payReq);
+    sock.on('payment-completed', payComp);
+    return () => { sock.off('payment-required', payReq); sock.off('payment-completed', payComp); };
+  }, [user]);
 
   const initializeDashboardData = () => {
     // Remove mock stats; start with zeros then fetch real
@@ -573,46 +700,102 @@ const UserDashboard = () => {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl">Performance Overview</CardTitle>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-yellow-600" /> Performance Overview
+              </CardTitle>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
+                <select
+                  value={performanceRange}
+                  onChange={e => setPerformanceRange(e.target.value as any)}
+                  className="text-sm border rounded px-2 py-1 bg-white"
+                >
+                  <option value="7d">7d</option>
+                  <option value="30d">30d</option>
+                  <option value="90d">90d</option>
+                </select>
+                <Button variant="outline" size="sm" onClick={() => setChartType(t => t==='line'?'area':'line')}>
+                  {chartType === 'line' ? 'Area' : 'Line'}
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={() => setPerformanceData(p => [...p])}>
+                  <RefreshCw className="h-4 w-4 mr-1" /> Refresh
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gradient-to-br from-yellow-50 via-yellow-100 to-orange-100 rounded-lg flex items-center justify-center relative overflow-hidden">
-                {/* Background pattern */}
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute top-4 left-4 w-16 h-16 bg-yellow-400 rounded-full"></div>
-                  <div className="absolute top-12 right-8 w-8 h-8 bg-orange-400 rounded-full"></div>
-                  <div className="absolute bottom-8 left-12 w-12 h-12 bg-yellow-500 rounded-full"></div>
-                  <div className="absolute bottom-4 right-4 w-6 h-6 bg-orange-500 rounded-full"></div>
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-4 text-xs">
+                  <button onClick={() => setActiveSeries(s => ({ ...s, revenue: !s.revenue }))} className={`flex items-center gap-1 px-2 py-1 rounded border ${activeSeries.revenue ? 'bg-yellow-100 border-yellow-300' : 'opacity-40'}`}>
+                    <span className="w-3 h-3 rounded-full bg-yellow-500"></span> Revenue
+                  </button>
+                  <button onClick={() => setActiveSeries(s => ({ ...s, bids: !s.bids }))} className={`flex items-center gap-1 px-2 py-1 rounded border ${activeSeries.bids ? 'bg-blue-100 border-blue-300' : 'opacity-40'}`}>
+                    <span className="w-3 h-3 rounded-full bg-blue-500"></span> Bids
+                  </button>
+                  <button onClick={() => setActiveSeries(s => ({ ...s, users: !s.users }))} className={`flex items-center gap-1 px-2 py-1 rounded border ${activeSeries.users ? 'bg-green-100 border-green-300' : 'opacity-40'}`}>
+                    <span className="w-3 h-3 rounded-full bg-green-500"></span> Users
+                  </button>
                 </div>
-                
-                <div className="text-center z-10">
-                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg">
-                    <BarChart3 className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
-                    <p className="text-gray-800 font-semibold">Performance Analytics</p>
-                    <p className="text-sm text-gray-600 mt-2">Revenue, Bids, and User Growth</p>
-                    <div className="mt-4 flex justify-center space-x-4 text-xs">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full mr-1"></div>
-                        <span>Revenue</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
-                        <span>Bids</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
-                        <span>Users</span>
-                      </div>
+                <div className="relative">
+                  <svg
+                    viewBox="0 0 400 180"
+                    className="w-full h-72 bg-gradient-to-br from-yellow-50 via-yellow-100 to-orange-100 rounded-lg border"
+                    onMouseLeave={() => setHoverPoint(null)}
+                  >
+                    {/* Horizontal grid */}
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <line key={i} x1={0} x2={400} y1={i * 30} y2={i * 30} stroke="#ffffff33" strokeWidth={1} />
+                    ))}
+                    {(['revenue','bids','users'] as const).map(series => {
+                      if (!activeSeries[series]) return null;
+                      const color = series === 'revenue' ? '#eab308' : series === 'bids' ? '#3b82f6' : '#10b981';
+                      const maxVal = Math.max(...performanceData.map(d => d[series]), 1);
+                      // Build smooth path
+                      const pts = performanceData.map((d, idx) => {
+                        const x = (idx / Math.max(1, performanceData.length - 1)) * 380 + 10;
+                        const y = 170 - (d[series] / maxVal) * 140;
+                        return { x, y, raw: d };
+                      });
+                      if (!pts.length) return null;
+                      const dPath = pts.map((p,i) => {
+                        if (i===0) return `M ${p.x} ${p.y}`;
+                        const prev = pts[i-1];
+                        const cx = (prev.x + p.x)/2;
+                        return `Q ${prev.x} ${prev.y} ${cx} ${ (prev.y + p.y)/2 } T ${p.x} ${p.y}`;
+                      }).join(' ');
+                      const areaPath = chartType==='area' ? dPath + ` L ${pts[pts.length-1].x} 170 L ${pts[0].x} 170 Z` : null;
+                      return (
+                        <g key={series}>
+                          {chartType==='area' && <path d={areaPath!} fill={color+ '33'} stroke="none" />}
+                          <path d={dPath} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" />
+                          {pts.map((p,i)=>(<circle key={i} cx={p.x} cy={p.y} r={3} fill={color} stroke="#fff" strokeWidth={1} onMouseEnter={()=> setHoverPoint({ ...p.raw, idx:i, x:p.x, series })} />))}
+                        </g>
+                      );
+                    })}
+                    {/* hover vertical line */}
+                    {hoverPoint && (
+                      <line x1={hoverPoint.x} x2={hoverPoint.x} y1={0} y2={180} stroke="#00000022" />
+                    )}
+                  </svg>
+                  {hoverPoint && (
+                    <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm rounded shadow px-3 py-2 text-xs space-y-1">
+                      <div className="font-medium">{hoverPoint.date}</div>
+                      {activeSeries.revenue && <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-yellow-500"></span>Rev: {hoverPoint.revenue} {hoverPoint.idx>0 && <span className={ (performanceData[hoverPoint.idx].revenue - performanceData[hoverPoint.idx-1].revenue)>=0? 'text-green-600':'text-red-600'}>({(performanceData[hoverPoint.idx].revenue - performanceData[hoverPoint.idx-1].revenue)>=0?'+':''}{performanceData[hoverPoint.idx].revenue - performanceData[hoverPoint.idx-1].revenue})</span>}</div>}
+                      {activeSeries.bids && <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Bids: {hoverPoint.bids} {hoverPoint.idx>0 && <span className={ (performanceData[hoverPoint.idx].bids - performanceData[hoverPoint.idx-1].bids)>=0? 'text-green-600':'text-red-600'}>({(performanceData[hoverPoint.idx].bids - performanceData[hoverPoint.idx-1].bids)>=0?'+':''}{performanceData[hoverPoint.idx].bids - performanceData[hoverPoint.idx-1].bids})</span>}</div>}
+                      {activeSeries.users && <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500"></span>Users: {hoverPoint.users} {hoverPoint.idx>0 && <span className={ (performanceData[hoverPoint.idx].users - performanceData[hoverPoint.idx-1].users)>=0? 'text-green-600':'text-red-600'}>({(performanceData[hoverPoint.idx].users - performanceData[hoverPoint.idx-1].users)>=0?'+':''}{performanceData[hoverPoint.idx].users - performanceData[hoverPoint.idx-1].users})</span>}</div>}
                     </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-center text-xs">
+                  <div className="p-3 bg-white rounded border">
+                    <p className="text-gray-500">Avg Rev / day</p>
+                    <p className="font-semibold">{performanceData.length ? Math.round(performanceData.reduce((a,c)=>a+c.revenue,0)/performanceData.length) : 0}</p>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <p className="text-gray-500">Avg Bids / day</p>
+                    <p className="font-semibold">{performanceData.length ? Math.round(performanceData.reduce((a,c)=>a+c.bids,0)/performanceData.length) : 0}</p>
+                  </div>
+                  <div className="p-3 bg-white rounded border">
+                    <p className="text-gray-500">Avg Users / day</p>
+                    <p className="font-semibold">{performanceData.length ? Math.round(performanceData.reduce((a,c)=>a+c.users,0)/performanceData.length) : 0}</p>
                   </div>
                 </div>
               </div>
@@ -768,13 +951,16 @@ const UserDashboard = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xl">Recent Activity</CardTitle>
-            <Button variant="outline" size="sm">
-              View All
+            <Button variant="outline" size="sm" onClick={() => setShowAllActivity(prev => !prev)}>
+              {showAllActivity ? 'Show Less' : 'View All'}
             </Button>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity) => (
+              {recentActivity.length === 0 && (
+                <div className="text-sm text-gray-500 p-3">No recent activity yet.</div>
+              )}
+              {(showAllActivity ? recentActivity : recentActivity.slice(0, 6)).map((activity) => (
                 <div key={activity.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                     activity.status === 'success' ? 'bg-green-100' : 
@@ -814,74 +1000,95 @@ const UserDashboard = () => {
         </Card>
 
         {/* Quick Actions & System Status */}
+        {/* Removed for user dashboard as per request */}
+      </div>
+
+      {/* Reports Card (replaces removed Quick Actions & System) */}
+      <div className="mt-6 grid grid-cols-1">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Quick Actions & System</CardTitle>
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-xl flex items-center gap-2"><SlidersHorizontal className="h-5 w-5 text-yellow-600" /> Dynamic Reports</CardTitle>
+              {reportLoading && <RefreshCw className="h-4 w-4 animate-spin text-yellow-600" />}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={reportRange}
+                onChange={e => setReportRange(e.target.value as any)}
+                className="text-sm border rounded px-2 py-1 bg-white"
+              >
+                <option value="7d">7d</option>
+                <option value="30d">30d</option>
+                <option value="90d">90d</option>
+              </select>
+              <input type="date" value={customStart} onChange={e=>setCustomStart(e.target.value)} className="text-sm border rounded px-2 py-1" />
+              <span className="text-xs text-gray-400">to</span>
+              <input type="date" value={customEnd} onChange={e=>setCustomEnd(e.target.value)} className="text-sm border rounded px-2 py-1" />
+              <select value={filteredType} onChange={e=>setFilteredType(e.target.value as any)} className="text-sm border rounded px-2 py-1">
+                <option value="all">All Types</option>
+                <option value="bid">Bids</option>
+                <option value="auction">Auctions</option>
+                <option value="user">Users</option>
+                <option value="payment">Payments</option>
+              </select>
+              <Button variant="outline" size="sm" onClick={fetchDynamicReportData}>Run</Button>
+              <Button variant="outline" size="sm" onClick={handleReports}>Open</Button>
+            </div>
           </CardHeader>
           <CardContent>
-            {/* Quick Actions */}
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
-                  onClick={() => window.open('/create-auction', '_blank')}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Auction
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={handleManageUsers}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Manage Users
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={handleModeration}
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Moderation
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={handleReports}
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Reports
-                </Button>
-              </div>
+            <div className="flex flex-wrap gap-2 mb-4 text-xs">
+              {(['activity','auctions','bids','revenue'] as const).map(k => (
+                <button key={k} onClick={()=>toggleReportMetric(k)} className={`px-2 py-1 rounded border ${reportMetrics[k]? 'bg-yellow-100 border-yellow-300':'opacity-40 border-gray-300'}`}>{k}</button>
+              ))}
             </div>
-
-            {/* System Status */}
-            <div>
-              <h3 className="font-medium text-gray-900 mb-3">System Status</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Database</span>
-                  <Badge variant="outline" className="text-green-600 border-green-200">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    Online
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Active Sessions</span>
-                  <span className="text-sm font-medium">142</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Server Load</span>
-                  <span className="text-sm font-medium">68%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Recent Errors</span>
-                  <Badge variant="outline" className="text-yellow-600 border-yellow-200">
-                    <AlertTriangle className="w-3 h-3 mr-1" />
-                    2
-                  </Badge>
-                </div>
-              </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+              {reportSeries.map(s => {
+                const total = s.values.reduce((a,c)=>a+c,0);
+                const avg = Math.round(total / Math.max(1, s.values.length));
+                return (
+                  <div key={s.label} className="p-3 bg-white rounded border text-center">
+                    <p className="text-xs text-gray-500 mb-1 flex items-center justify-center gap-1">{s.label}<span className="text-[10px] text-gray-400">avg</span></p>
+                    <p className="font-semibold text-gray-900 mb-1">{avg}</p>
+                    {/* sparkline */}
+                    <svg viewBox="0 0 120 30" className="w-full h-6 text-yellow-600">
+                      {s.values.length>1 && (
+                        <polyline
+                          fill="none"
+                          stroke="#eab308"
+                          strokeWidth="2"
+                          points={s.values.map((v,i)=>{
+                            const x = (i/(s.values.length-1))*118+1;
+                            const max = Math.max(...s.values,1);
+                            const y = 28 - (v/max)*24;
+                            return `${x},${y}`;
+                          }).join(' ')}
+                        />
+                      )}
+                    </svg>
+                  </div>
+                );
+              })}
             </div>
+            <div className="flex flex-wrap gap-3 mb-4">
+              <Button variant="outline" size="sm" onClick={handleExportData}>
+                <Download className="h-4 w-4 mr-1" /> JSON
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                <FileText className="h-4 w-4 mr-1" /> CSV
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleGeneratePDF}>
+                <Printer className="h-4 w-4 mr-1" /> PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowAllActivity(true)}>Full Activity</Button>
+              <Button variant="outline" size="sm" onClick={handleScheduleReport}>Schedule</Button>
+            </div>
+            <div className="text-xs text-gray-500 flex flex-wrap gap-4 mb-4">
+              <span>Preset: {reportRange}</span>
+              {customStart && <span>From: {customStart}</span>}
+              {customEnd && <span>To: {customEnd}</span>}
+              {lastExportAt && <span>Last export: {lastExportAt.toLocaleTimeString()}</span>}
+            </div>
+            <div className="text-xs text-gray-400">Filtered Activity Count: {recentActivity.filter(a => filteredType==='all' || a.type===filteredType).length}</div>
           </CardContent>
         </Card>
       </div>

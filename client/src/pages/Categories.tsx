@@ -94,8 +94,7 @@ const Categories = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow pt-24 pb-20">
+       <main className="">
         <section className="py-12 md:py-16 relative overflow-hidden">
           {/* Background Elements */}
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-muted/30 to-background" />
@@ -242,7 +241,6 @@ const Categories = () => {
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 };

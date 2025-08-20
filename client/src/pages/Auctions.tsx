@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Filter, SlidersHorizontal, Search, Plus, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { GlassmorphicCard } from '@/components/ui/GlassmorphicCard';
@@ -53,6 +53,9 @@ const formatBidAmount = (currentBid: string | null, startingBid: string): string
 const Auctions = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const location = useLocation();
+  const urlParams = new URLSearchParams(location.search);
+  const initialSearch = urlParams.get('search') || '';
   const [auctionData, setAuctionData] = useState<AuctionResponse | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +64,7 @@ const Auctions = () => {
   const [filters, setFilters] = useState({
     category: '',
     status: '',
-    search: '',
+    search: initialSearch,
     sort: 'created_at',
     order: 'DESC',
     page: 1,
@@ -129,6 +132,12 @@ const Auctions = () => {
   useEffect(() => {
     fetchAuctions();
   }, [filters, user]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const s = params.get('search') || '';
+    setFilters(prev => prev.search === s ? prev : { ...prev, search: s, page:1 });
+  }, [location.search]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({

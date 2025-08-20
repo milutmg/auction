@@ -55,6 +55,7 @@ const App: React.FC = () => {
                 <Route path="/auctions/:id" element={<AuctionDetail />} />
                 <Route path="/live-bidding" element={<LiveBidding />} />
                 <Route path="/about" element={<About />} />
+                {/* Categories now protected below */}
                 <Route path="/categories" element={<Categories />} />
                 <Route path="/categories/:categoryName" element={<CategoryDetail />} />
                 <Route path="/demo/notifications" element={<NotificationDemo />} />

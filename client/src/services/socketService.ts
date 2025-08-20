@@ -49,10 +49,13 @@ export interface BidModerationEvent {
 class SocketService {
   private socket: Socket | null = null;
   private serverUrl: string;
+  private reconnectCallbacks: Array<() => void> = [];
 
   constructor() {
     this.serverUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3002';
   }
+
+  onReconnect(cb: () => void) { this.reconnectCallbacks.push(cb); }
 
   connect(): Promise<Socket> {
     return new Promise((resolve, reject) => {
@@ -71,6 +74,11 @@ class SocketService {
         resolve(this.socket!);
       });
 
+      this.socket.on('reconnect', () => {
+        console.log('Socket reconnected');
+        this.reconnectCallbacks.forEach(cb => { try { cb(); } catch {} });
+      });
+
       this.socket.on('connect_error', (error) => {
         console.error('Connection error:', error);
         reject(error);
@@ -80,6 +88,14 @@ class SocketService {
         console.log('Disconnected from server:', reason);
       });
     });
+  }
+
+  async fetchPendingPaymentEvents(userId: string) {
+    try {
+      const resp = await fetch(`/api/payments/events/pending/${userId}`);
+      if (!resp.ok) return [];
+      return await resp.json();
+    } catch { return []; }
   }
 
   disconnect() {
@@ -136,6 +152,10 @@ class SocketService {
   offBidApproved(cb?: (data: BidModerationEvent) => void) { this.socket?.off('bid-approved', cb); }
   onBidRejected(cb: (data: BidModerationEvent) => void) { this.socket?.on('bid-rejected', cb); }
   offBidRejected(cb?: (data: BidModerationEvent) => void) { this.socket?.off('bid-rejected', cb); }
+  onPaymentRequired(cb: (data: any) => void) { this.socket?.on('payment-required', cb); }
+  offPaymentRequired(cb?: (data: any) => void) { this.socket?.off('payment-required', cb); }
+  onPaymentCompleted(cb: (data: any) => void) { this.socket?.on('payment-completed', cb); }
+  offPaymentCompleted(cb?: (data: any) => void) { this.socket?.off('payment-completed', cb); }
 
   offBidUpdate(callback?: (data: BidData) => void) {
     if (this.socket) {

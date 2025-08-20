@@ -1721,68 +1721,43 @@ router.post('/bids/:bidId/approve', authenticateToken, adminOnly, async (req, re
     const { bidId } = req.params;
     const adminId = req.user.id;
 
-    // Get bid details
-    const bidResult = await db.query(`
-      SELECT b.*, a.title as auction_title, u.full_name as bidder_name
-      FROM bids b
-      JOIN auctions a ON b.auction_id = a.id
-      JOIN users u ON b.bidder_id = u.id
-      WHERE b.id = $1 AND b.status = 'pending'
-    `, [bidId]);
-
-    if (bidResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Pending bid not found' });
-    }
-
+    const bidResult = await db.query(`SELECT b.*, a.title as auction_title, a.status as auction_status, a.current_bid, a.end_time, a.id as auction_id FROM bids b JOIN auctions a ON b.auction_id=a.id WHERE b.id=$1`, [bidId]);
+    if (!bidResult.rows.length) return res.status(404).json({ error: 'Bid not found' });
     const bid = bidResult.rows[0];
+    if (bid.status !== 'pending') return res.status(400).json({ error: 'Bid not pending' });
 
     await db.query('BEGIN');
-
     try {
-      // Approve the bid
-      await db.query(
-        'UPDATE bids SET status = $1 WHERE id = $2',
-        ['approved', bidId]
-      );
+      await db.query('SELECT id FROM bids WHERE id=$1 FOR UPDATE', [bidId]);
+      const lockedAuction = await db.query('SELECT id,status,current_bid FROM auctions WHERE id=$1 FOR UPDATE', [bid.auction_id]);
+      const auctionRow = lockedAuction.rows[0];
+      if (!auctionRow) throw new Error('Auction missing');
 
-      // Update auction current bid to the highest approved bid
-      const highestApprovedBidResult = await db.query(`
-        SELECT MAX(amount) as highest_bid 
-        FROM bids 
-        WHERE auction_id = $1 AND status = 'approved'
-      `, [bid.auction_id]);
-      
-      const highestApprovedBid = highestApprovedBidResult.rows[0].highest_bid;
-      
-      await db.query(
-        'UPDATE auctions SET current_bid = $1 WHERE id = $2',
-        [highestApprovedBid, bid.auction_id]
-      );
+      if (auctionRow.status === 'ended') {
+        await db.query('UPDATE bids SET status=$1 WHERE id=$2', ['approved', bidId]);
+      } else {
+        await db.query('UPDATE bids SET status=$1, approved_at=NOW() WHERE id=$2', ['approved', bidId]);
+        await db.query('UPDATE auctions SET status=\'ended\', current_bid=$1, updated_at=NOW() WHERE id=$2', [bid.amount, bid.auction_id]);
+      }
 
-      // Create notification for bidder
-      await db.query(`
-        INSERT INTO notifications (user_id, title, message, type, related_auction_id)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [
-        bid.bidder_id,
-        'Bid Approved!',
-        `Your bid of $${bid.amount} on "${bid.auction_title}" has been approved.`,
-        'bid_approved',
-        bid.auction_id
-      ]);
+      await db.query('INSERT INTO notifications (user_id,title,message,type,related_auction_id) VALUES ($1,$2,$3,$4,$5)', [bid.bidder_id, 'Bid Approved!', `Your bid of NPR ${bid.amount} on "${bid.auction_title}" has been approved.`, 'bid_approved', bid.auction_id]);
 
       await db.query('COMMIT');
 
-      res.json({
-        message: 'Bid approved successfully',
-        bid: bid
-      });
-    } catch (error) {
+      try {
+        const io = req.app.get('io');
+        if (io) {
+          io.emit('bid-approved', { auctionId: bid.auction_id, bidId: bid.id, amount: bid.amount, userId: bid.bidder_id });
+        }
+      } catch (e) { console.error('Emit events after bid approve failed', e); }
+
+      return res.json({ message: 'Bid approved (legacy)', bid: { id: bid.id, amount: bid.amount, auction_id: bid.auction_id } });
+    } catch (inner) {
       await db.query('ROLLBACK');
-      throw error;
+      throw inner;
     }
   } catch (error) {
-    console.error('Approve bid error:', error);
+    console.error('Approve bid error (enhanced):', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
