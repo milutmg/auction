@@ -33,65 +33,66 @@ const AuctionDetail = () => {
     }
   }, [auction]);
 
-  useEffect(() => {
+  const fetchAuction = async () => {
     if (!id) return;
-    const fetchAuction = async () => {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auctions/${id}`);
-        if (response.ok) {
-          const auctionData = await response.json();
-          setAuction(auctionData);
-        } else {
-          toast({
-            title: "Error",
-            description: "Auction not found",
-            variant: "destructive",
-          });
-          navigate('/auctions');
-        }
-      } catch (error) {
-        console.error('Error fetching auction:', error);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auctions/${id}`);
+      if (response.ok) {
+        const auctionData = await response.json();
+        setAuction(auctionData);
+      } else {
         toast({
           title: "Error",
-          description: "Failed to load auction details",
+          description: "Auction not found",
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
+        navigate('/auctions');
       }
-    };
+    } catch (error) {
+      console.error('Error fetching auction:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load auction details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const fetchBids = async () => {
-      try {
-        // Fetch all bids (approved, pending, rejected) for full transparency
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auctions/${id}/bids/all`, {
-          headers: {
-            ...(user && { 'Authorization': `Bearer ${localStorage.getItem('token')}` })
-          }
-        });
-        if (response.ok) {
-          const bidsData = await response.json();
+  const fetchBids = async () => {
+    if (!id) return;
+    try {
+      // Fetch all bids (approved, pending, rejected) for full transparency
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/auctions/${id}/bids/all`, {
+        headers: {
+          ...(user && { 'Authorization': `Bearer ${localStorage.getItem('token')}` })
+        }
+      });
+      if (response.ok) {
+        const bidsData = await response.json();
+        setBids(bidsData.map(bid => ({
+          ...bid,
+          profiles: { full_name: bid.bidder_name }
+        })));
+      } else {
+        // Fallback to approved bids only
+        const fallbackResponse = await fetch(`${import.meta.env.VITE_API_URL}/auctions/${id}/bids`);
+        if (fallbackResponse.ok) {
+          const bidsData = await fallbackResponse.json();
           setBids(bidsData.map(bid => ({
             ...bid,
-            profiles: { full_name: bid.bidder_name }
+            profiles: { full_name: bid.bidder_name },
+            status: 'approved'
           })));
-        } else {
-          // Fallback to approved bids only
-          const fallbackResponse = await fetch(`${import.meta.env.VITE_API_URL}/auctions/${id}/bids`);
-          if (fallbackResponse.ok) {
-            const bidsData = await fallbackResponse.json();
-            setBids(bidsData.map(bid => ({
-              ...bid,
-              profiles: { full_name: bid.bidder_name },
-              status: 'approved'
-            })));
-          }
         }
-      } catch (error) {
-        console.error('Error fetching bids:', error);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching bids:', error);
+    }
+  };
 
+  useEffect(() => {
     fetchAuction();
     fetchBids();
     
@@ -113,7 +114,7 @@ const AuctionDetail = () => {
       clearInterval(interval);
       clearInterval(timerInterval);
     };
-  }, [id, navigate, toast]);
+  }, [id, navigate, toast, user, auction?.end_time]);
 
   const refreshData = async () => {
     setRefreshing(true);
@@ -275,12 +276,12 @@ const AuctionDetail = () => {
                 <img
                   src={auction.image_url ? 
                     `${import.meta.env.VITE_BASE_URL}${auction.image_url}` : 
-                    'https://images.unsplash.com/photo-1566312581307-d6bb3f6b2311?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+                    '/placeholder.svg'
                   }
                   alt={auction.title}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1566312581307-d6bb3f6b2311?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+                    e.currentTarget.src = '/placeholder.svg';
                   }}
                 />
               </div>

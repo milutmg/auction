@@ -75,7 +75,7 @@ export default function Hero() {
             >
               <div className="relative aspect-[3/4] overflow-hidden rounded-md mb-4">
                 <img 
-                  src="https://images.unsplash.com/photo-1567534301516-06385607734c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                  src="https://thelightclinic.co.uk/cdn/shop/files/ED77F56C-7712-44F8-88AF-C299BB9A6548_1024x1024@2x.jpg?v=1733747176" 
                   alt="Antique vase"
                   className="object-cover w-full h-full hover-scale"
                 />
@@ -104,8 +104,8 @@ export default function Hero() {
             >
               <div className="relative aspect-video overflow-hidden rounded-md mb-3">
                 <img 
-                  src="https://images.unsplash.com/photo-1577701244128-7f9e434fcd54?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                  alt="Antique clock"
+                  src="https://images.unsplash.com/photo-1566805484277-4d0be27e9ce6?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fGFudGlxdWUlMjBjbG9ja3xlbnwwfHwwfHx8MA%3D%3D" 
+                  alt="Art Deco Mantel Clock"
                   className="object-cover w-full h-full hover-scale"
                 />
               </div>

@@ -1,0 +1,11 @@
+# Node.js
+node_modules/
+
+
+
+
+# Client-specific ignores
+client/node_modules/
+
+# Server-specific ignores
+server/node_modules/

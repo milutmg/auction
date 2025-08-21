@@ -393,12 +393,12 @@ const Auctions = () => {
                             <img
                               src={auction.image_url ? 
                                 `${import.meta.env.VITE_BASE_URL}${auction.image_url}` : 
-                                'https://images.unsplash.com/photo-1566312581307-d6bb3f6b2311?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
+                                '/placeholder.svg'
                               }
                               alt={auction.title}
                               className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                               onError={(e) => {
-                                e.currentTarget.src = 'https://images.unsplash.com/photo-1566312581307-d6bb3f6b2311?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+                                e.currentTarget.src = '/placeholder.svg';
                               }}
                             />
                           </div>

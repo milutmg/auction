@@ -39,7 +39,7 @@ export default function AuctionCard({ auction, className }: AuctionCardProps) {
         <div className="relative">
           <div className="aspect-[4/3] overflow-hidden">
             <img
-              src={auction.imageUrl}
+              src={auction.imageUrl || "/placeholder.svg"}
               alt={auction.title}
               className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
             />
