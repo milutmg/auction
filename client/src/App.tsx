@@ -22,6 +22,10 @@ import Account from './pages/Account';
 import About from './pages/About';
 import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
+import PrivacyPolicy, { route as privacyRoute } from './pages/PrivacyPolicy';
+import CookiesPolicy, { route as cookiesRoute } from './pages/CookiesPolicy';
+import TermsOfService, { route as termsRoute } from './pages/TermsOfService';
+import Contact, { route as contactRoute } from './pages/Contact';
 
 import NotFound from './pages/NotFound';
 import NotificationDemo from './components/demo/NotificationDemo';
@@ -68,6 +72,10 @@ const App: React.FC = () => {
                 <Route path="/categories/:categoryName" element={<CategoryDetail />} />
                 <Route path="/demo/notifications" element={<NotificationDemo />} />
                 <Route path="/debug" element={<Debug />} />
+                <Route path={privacyRoute} element={<PrivacyPolicy />} />
+                <Route path={cookiesRoute} element={<CookiesPolicy />} />
+                <Route path={termsRoute} element={<TermsOfService />} />
+                <Route path={contactRoute} element={<Contact />} />
                 
                 {/* Protected routes (require authentication) */}
                 <Route path="/auctions/:id/live" element={
