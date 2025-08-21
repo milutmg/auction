@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
-import { Filter, SlidersHorizontal, Search, Plus, ChevronDown, ArrowUpDown } from 'lucide-react';
+import { Filter, SlidersHorizontal, Search, Plus, ChevronDown, ArrowUpDown, Grid, List } from 'lucide-react';
 import { GlassmorphicCard } from '@/components/ui/GlassmorphicCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import AdvancedSearchFilters from '@/components/search/AdvancedSearchFilters';
+import apiService from '@/services/api';
 
 interface Auction {
   id: string;

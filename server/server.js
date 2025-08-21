@@ -21,6 +21,9 @@ const notificationsApi = require('./routes/notifications');
 const paymentRoutes = require('./routes/payments');
 const esewaRoutes = require('./routes/esewa');
 const adminBidsRoutes = require('./routes/admin-bids');
+const searchRoutes = require('./routes/search');
+const usersRoutes = require('./routes/users');
+const paymentsEnhancedRoutes = require('./routes/payments-enhanced');
 
 const notificationService = require('./services/notificationService');
 const db = require('./config/database');
@@ -124,6 +127,9 @@ app.use('/api/notifications', notificationsApi);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/esewa', esewaRoutes);
 app.use('/api/admin', adminBidsRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/payments-v2', paymentsEnhancedRoutes);
 
 // Manual admin endpoint to trigger ended auction processing (testing)
 app.post('/api/admin/process-ended-auctions', async (req, res) => {

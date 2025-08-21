@@ -11,6 +11,9 @@ import Index from './pages/Index';
 import Auth from './pages/Auth';
 import AuthCallback from './pages/AuthCallback';
 import Auctions from './pages/Auctions';
+import EnhancedAuctions from './pages/EnhancedAuctions';
+import AuctionsFixed from './pages/AuctionsFixed';
+import SimpleAuctions from './pages/SimpleAuctions';
 import AuctionDetail from './pages/AuctionDetail';
 import CreateAuction from './pages/CreateAuction';
 import LiveBidding from './pages/LiveBidding';
@@ -26,7 +29,11 @@ import Debug from './pages/Debug';
 import OrderDetails from './pages/OrderDetails';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailed from './pages/PaymentFailed';
+import PaymentCheckout from './pages/PaymentCheckout';
+import PaymentSuccessV2 from './pages/PaymentSuccessV2';
+import PaymentFailedV2 from './pages/PaymentFailedV2';
 import PaymentDashboard from './pages/PaymentDashboard';
+import PaymentDashboardFixed from './pages/PaymentDashboardFixed';
 import PaymentForm from './pages/PaymentForm';
 import QuickPay from './pages/QuickPay';
 // import ModernAdminDashboard from './pages/ModernAdminDashboard';
@@ -51,7 +58,8 @@ const App: React.FC = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/auctions" element={<Auctions />} />
+                <Route path="/auctions" element={<SimpleAuctions />} />
+                <Route path="/auctions/classic" element={<Auctions />} />
                 <Route path="/auctions/:id" element={<AuctionDetail />} />
                 <Route path="/live-bidding" element={<LiveBidding />} />
                 <Route path="/about" element={<About />} />
@@ -90,11 +98,16 @@ const App: React.FC = () => {
                 } />
                 
                 {/* Payment routes */}
+                <Route path="/payment/success" element={<PaymentSuccessV2 />} />
+                <Route path="/payment/failed" element={<PaymentFailedV2 />} />
+                <Route path="/payment/checkout/:orderId" element={<ProtectedRoute><PaymentCheckout /></ProtectedRoute>} />
+                
+                {/* Legacy payment routes */}
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-failed" element={<PaymentFailed />} />
                 <Route path="/payments" element={
                   <ProtectedRoute>
-                    <PaymentDashboard />
+                    <PaymentDashboardFixed />
                   </ProtectedRoute>
                 } />
                 <Route path="/payment-form" element={
