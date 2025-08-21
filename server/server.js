@@ -145,6 +145,88 @@ app.post('/api/admin/process-ended-auctions', async (req, res) => {
 // Initialize notification service with io
 notificationService.setSocketIO(io);
 
+// Function to process ended auctions
+async function processEndedAuctions() {
+  try {
+    // Find auctions that have ended but are still marked as active
+    const endedAuctionsResult = await db.query(`
+      SELECT id, title, current_bid, seller_id
+      FROM auctions 
+      WHERE status = 'active' 
+        AND end_time < NOW()
+        AND approval_status = 'approved'
+    `);
+
+    for (const auction of endedAuctionsResult.rows) {
+      // Get the highest approved bid for this auction
+      const highestBidResult = await db.query(`
+        SELECT bidder_id, amount 
+        FROM bids 
+        WHERE auction_id = $1 AND status = 'approved'
+        ORDER BY amount DESC 
+        LIMIT 1
+      `, [auction.id]);
+
+      if (highestBidResult.rows.length > 0) {
+        const winningBid = highestBidResult.rows[0];
+        
+        // Update auction status to ended and set final bid
+        await db.query(`
+          UPDATE auctions 
+          SET status = 'ended', 
+              current_bid = $1,
+              updated_at = NOW()
+          WHERE id = $2
+        `, [winningBid.amount, auction.id]);
+
+        // Create order for the winner
+        await db.query(`
+          INSERT INTO orders (auction_id, winner_id, final_amount, status, payment_deadline)
+          VALUES ($1, $2, $3, 'pending', NOW() + INTERVAL '48 hours')
+        `, [auction.id, winningBid.bidder_id, winningBid.amount]);
+
+        // Notify the winner
+        await db.query(`
+          INSERT INTO notifications (user_id, type, title, message, related_auction_id)
+          VALUES ($1, 'auction_won', 'Congratulations! You won the auction!', 
+                  'You won the auction "${auction.title}" with a bid of $${winningBid.amount}. Please complete your payment within 48 hours.', $2)
+        `, [winningBid.bidder_id, auction.id]);
+
+        // Notify the seller
+        await db.query(`
+          INSERT INTO notifications (user_id, type, title, message, related_auction_id)
+          VALUES ($1, 'auction_ended', 'Your auction has ended', 
+                  'Your auction "${auction.title}" has ended with a winning bid of $${winningBid.amount}.', $2)
+        `, [auction.seller_id, auction.id]);
+
+        console.log(`Auction ${auction.id} (${auction.title}) ended with winning bid: $${winningBid.amount}`);
+      } else {
+        // No bids, just mark as ended
+        await db.query(`
+          UPDATE auctions 
+          SET status = 'ended', 
+              updated_at = NOW()
+          WHERE id = $1
+        `, [auction.id]);
+
+        // Notify the seller that auction ended with no bids
+        await db.query(`
+          INSERT INTO notifications (user_id, type, title, message, related_auction_id)
+          VALUES ($1, 'auction_ended', 'Your auction has ended', 
+                  'Your auction "${auction.title}" has ended with no bids.', $2)
+        `, [auction.seller_id, auction.id]);
+
+        console.log(`Auction ${auction.id} (${auction.title}) ended with no bids`);
+      }
+    }
+
+    return endedAuctionsResult.rows.length;
+  } catch (error) {
+    console.error('Error processing ended auctions:', error);
+    throw error;
+  }
+}
+
 // Socket.IO for real-time bidding
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -329,6 +411,18 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
+  
+  // Start scheduled job to process ended auctions every minute
+  setInterval(async () => {
+    try {
+      const processedCount = await processEndedAuctions();
+      if (processedCount > 0) {
+        console.log(`Processed ${processedCount} ended auctions`);
+      }
+    } catch (error) {
+      console.error('Scheduled auction processing error:', error);
+    }
+  }, 60000); // Run every minute
 });
 
 // Export io instance for use in other modules

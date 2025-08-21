@@ -250,6 +250,15 @@ const AuctionDetail = () => {
   const isEnded = auction.status === 'ended' || timeLeft <= 0;
   const isWinner = isEnded && bids.length > 0 && bids[0]?.bidder_id === user?.id;
 
+  // Debug logging
+  console.log('AuctionDetail Debug:', {
+    user: user ? { id: user.id, email: user.email, full_name: user.full_name } : null,
+    auction: auction ? { id: auction.id, seller_id: auction.seller_id, seller_name: auction.seller_name } : null,
+    isSeller: user && auction ? user.id === auction.seller_id : false,
+    isActive,
+    isEnded
+  });
+
   const handlePayment = () => {
     window.location.href = `/api/payments/pay?auction_id=${auction.id}`;
   };

@@ -53,7 +53,7 @@ const LiveBiddingChat: React.FC<LiveBiddingChatProps> = ({
   onBidPlaced
 }) => {
   const { user } = useAuth();
-  const { isConnected } = useSocket();
+  const { isConnected, placeBid, recentBids, auctionUpdates } = useSocket();
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -71,98 +71,78 @@ const LiveBiddingChat: React.FC<LiveBiddingChatProps> = ({
     scrollToBottom();
   }, [messages]);
 
-  // Mock real-time functionality - In real app, this would connect to WebSocket
+  // Listen for real-time bid updates from socket
   useEffect(() => {
-    // Simulate some initial messages
-    const initialMessages: ChatMessage[] = [
-      {
-        id: '1',
+    // Add welcome message when component loads
+    const welcomeMessage: ChatMessage = {
+      id: 'welcome',
+      type: 'system',
+      user: {
+        id: 'system',
+        name: 'System',
+        role: 'system'
+      },
+      content: `Welcome to the live auction for "${auctionTitle}"!`,
+      timestamp: new Date().toISOString(),
+      auction_id: auctionId
+    };
+
+    setMessages([welcomeMessage]);
+
+    const auctionBids = recentBids[auctionId] || [];
+    
+    // Convert socket bid data to chat messages
+    const bidMessages: ChatMessage[] = auctionBids.map(bid => ({
+      id: `bid-${Date.now()}-${Math.random()}`,
+      type: 'bid',
+      user: {
+        id: bid.userId,
+        name: bid.bidderName,
+        role: 'bidder'
+      },
+      content: 'placed a bid',
+      amount: bid.amount,
+      timestamp: bid.timestamp,
+      auction_id: auctionId
+    }));
+
+    // Update messages with new bids
+    setMessages(prev => {
+      const existingIds = new Set(prev.map(msg => msg.id));
+      const newBidMessages = bidMessages.filter(msg => !existingIds.has(msg.id));
+      return [...prev, ...newBidMessages];
+    });
+  }, [recentBids, auctionId, auctionTitle]);
+
+  // Listen for auction updates
+  useEffect(() => {
+    const update = auctionUpdates[auctionId];
+    if (update) {
+      const systemMessage: ChatMessage = {
+        id: `update-${Date.now()}`,
         type: 'system',
-        user: { id: 'system', name: 'System' },
-        content: `Welcome to the live auction for "${auctionTitle}"!`,
-        timestamp: new Date(Date.now() - 300000).toISOString(),
+        user: {
+          id: 'system',
+          name: 'System',
+          role: 'system'
+        },
+        content: `Current bid updated to $${update.currentBid}`,
+        timestamp: update.timestamp,
         auction_id: auctionId
-      },
-      {
-        id: '2',
-        type: 'bid',
-        user: { id: '2', name: 'ArtCollector92', role: 'premium' },
-        content: 'placed a bid',
-        amount: 150,
-        timestamp: new Date(Date.now() - 240000).toISOString(),
-        auction_id: auctionId
-      },
-      {
-        id: '3',
-        type: 'message',
-        user: { id: '3', name: 'VintageExpert' },
-        content: 'This piece has amazing craftsmanship! The detail work is extraordinary.',
-        timestamp: new Date(Date.now() - 180000).toISOString(),
-        auction_id: auctionId
-      },
-      {
-        id: '4',
-        type: 'bid',
-        user: { id: '4', name: 'AntiqueHunter', role: 'premium' },
-        content: 'placed a bid',
-        amount: 175,
-        timestamp: new Date(Date.now() - 120000).toISOString(),
-        auction_id: auctionId
-      },
-      {
-        id: '5',
-        type: 'message',
-        user: { id: '5', name: 'MuseumCurator' },
-        content: 'The provenance documentation looks authentic. Great find!',
-        timestamp: new Date(Date.now() - 60000).toISOString(),
-        auction_id: auctionId
-      }
-    ];
+      };
+      
+      setMessages(prev => [...prev, systemMessage]);
+    }
+  }, [auctionUpdates, auctionId]);
 
-    setMessages(initialMessages);
-    setActiveUsers(Math.floor(Math.random() * 15) + 5); // Random 5-20 users
-
-    // Simulate real-time messages
+  // Simulate active users count
+  useEffect(() => {
     const interval = setInterval(() => {
-      if (Math.random() > 0.7) { // 30% chance every 5 seconds
-        const randomMessages = [
-          'Beautiful piece!',
-          'What\'s the estimated age?',
-          'This would look perfect in my collection',
-          'The bidding is getting intense!',
-          'Anyone know the artist?',
-          'Incredible detail work',
-          'This is going higher than I expected',
-          'Worth every penny!',
-          'The condition looks pristine'
-        ];
-
-        const randomUsers = [
-          { id: 'u1', name: 'CollectorPro', role: 'premium' },
-          { id: 'u2', name: 'ArtLover23' },
-          { id: 'u3', name: 'VintageSeeker' },
-          { id: 'u4', name: 'HistoryBuff', role: 'premium' },
-          { id: 'u5', name: 'CuriosityShop' }
-        ];
-
-        const randomUser = randomUsers[Math.floor(Math.random() * randomUsers.length)];
-        const randomMessage = randomMessages[Math.floor(Math.random() * randomMessages.length)];
-
-        const newMsg: ChatMessage = {
-          id: `random-${Date.now()}`,
-          type: 'message',
-          user: randomUser,
-          content: randomMessage,
-          timestamp: new Date().toISOString(),
-          auction_id: auctionId
-        };
-
-        setMessages(prev => [...prev, newMsg]);
-      }
-    }, 5000);
+      setActiveUsers(Math.floor(Math.random() * 20) + 5);
+    }, 10000);
 
     return () => clearInterval(interval);
-  }, [auctionId, auctionTitle]);
+  }, []);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;
@@ -183,7 +163,6 @@ const LiveBiddingChat: React.FC<LiveBiddingChatProps> = ({
     setMessages(prev => [...prev, message]);
     setNewMessage('');
 
-    // In real app, send to WebSocket server
     toast({
       title: "Message sent",
       description: "Your message has been posted to the chat",
@@ -213,10 +192,22 @@ const LiveBiddingChat: React.FC<LiveBiddingChatProps> = ({
       return;
     }
 
+    if (!isConnected) {
+      toast({
+        title: "Connection Error",
+        description: "Not connected to live bidding server",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Create bid message
+      // Use the socket service to place the bid
+      placeBid(auctionId, amount);
+      
+      // Create bid message for immediate display
       const bidMessage: ChatMessage = {
         id: `bid-${Date.now()}`,
         type: 'bid',

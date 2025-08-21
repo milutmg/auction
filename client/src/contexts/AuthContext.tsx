@@ -111,10 +111,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setSession(null);
+    try {
+      // Clear all stored data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.clear();
+      
+      // Clear user state
+      setUser(null);
+      setSession(null);
+      
+      // Force page reload to clear any cached data
+      window.location.reload();
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Even if there's an error, clear the data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.clear();
+      setUser(null);
+      setSession(null);
+      window.location.reload();
+    }
   };
 
   return (
