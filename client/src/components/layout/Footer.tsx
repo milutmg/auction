@@ -87,16 +87,14 @@ export default function Footer() {
             <div className="space-y-2">
               <p className="flex items-center text-muted-foreground">
                 <Mail size={18} className="mr-2" />
-                info@antiquabid.com
+                milantamang@gmail.com
               </p>
               <p className="flex items-center text-muted-foreground">
                 <Phone size={18} className="mr-2" />
-                +1 (555) 123-4567
+                9749566845
               </p>
               <p className="text-muted-foreground">
-                123 Auction Avenue<br />
-                Suite 456<br />
-                New York, NY 10001
+                Basundhara, Kathmandu
               </p>
             </div>
           </div>
