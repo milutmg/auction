@@ -444,7 +444,7 @@ const Navbar = () => {
   return (
     <nav className="relative bg-white border-b border-gray-200 sticky top-0 z-50">
       {/* Simplified full-width bar so hamburger sits flush left */}
-      <div className="flex items-center justify-between h-16 px-2 sm:px-4">
+      <div className="flex items-center justify-between h-16 px-2 sm:px-">
         {/* Left Section: Hamburger + Logo (flush-left) */}
         <div className="flex items-center gap-3">
           <button

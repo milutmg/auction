@@ -388,6 +388,18 @@ class ApiService {
     });
     return this.handleResponse(response);
   }
+
+  // Generic helpers (added)
+  async get(path: string, includeAuth = true) {
+    const url = path.startsWith('http') ? path : `${this.baseURL}${path.startsWith('/') ? path : '/' + path}`;
+    const response = await this.fetchWithRetry(url, { headers: this.getHeaders(includeAuth) });
+    return this.handleResponse(response);
+  }
+  async post(path: string, body: any = {}, includeAuth = true) {
+    const url = path.startsWith('http') ? path : `${this.baseURL}${path.startsWith('/') ? path : '/' + path}`;
+    const response = await this.fetchWithRetry(url, { method: 'POST', headers: this.getHeaders(includeAuth), body: JSON.stringify(body) });
+    return this.handleResponse(response);
+  }
 }
 
 export const apiService = new ApiService();

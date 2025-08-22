@@ -61,8 +61,8 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   
   // State
   const [providers, setProviders] = useState<PaymentProvider[]>([]);
-  const [selectedProvider, setSelectedProvider] = useState<string>('');
-  const [selectedMethod, setSelectedMethod] = useState<string>('');
+  const [selectedProvider, setSelectedProvider] = useState<string>('esewa'); // force esewa
+  const [selectedMethod, setSelectedMethod] = useState<string>('wallet'); // only wallet method
   const [fees, setFees] = useState<PaymentFees | null>(null);
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -86,48 +86,63 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   // Load payment providers on mount
   useEffect(() => {
     loadPaymentProviders();
+    // Also compute fees for eSewa immediately
+    calculateFees();
   }, [amount, currency]);
-
-  // Calculate fees when provider changes
-  useEffect(() => {
-    if (selectedProvider && amount) {
-      calculateFees();
-    }
-  }, [selectedProvider, amount]);
 
   const loadPaymentProviders = async () => {
     try {
       setLoading(true);
+      // Fetch providers but keep only eSewa active
       const response = await apiService.get(`/payments-v2/providers?amount=${amount}&currency=${currency}`);
-      setProviders(response.providers);
-      
-      // Auto-select first provider if available
-      if (response.providers.length > 0) {
-        setSelectedProvider(response.providers[0].name);
-        setSelectedMethod(response.providers[0].payment_methods[0]);
+      const esewaOnly = (response.providers || []).filter((p: PaymentProvider) => p.name === 'esewa');
+      // Normalize fallback if backend not returning esewa
+      if (esewaOnly.length === 0) {
+        esewaOnly.push({
+          id: 'esewa-static',
+            name: 'esewa',
+            display_name: 'eSewa',
+            provider_type: 'wallet',
+            payment_methods: ['wallet'],
+            fee_structure: { percentage: 0, fixed: 0 },
+            processing_time: 'Instant'
+        } as any);
       }
+      setProviders(esewaOnly);
+      setSelectedProvider('esewa');
+      setSelectedMethod('wallet');
     } catch (error) {
       console.error('Failed to load payment providers:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load payment options. Please try again.",
-        variant: "destructive",
-      });
+      // Fallback static eSewa
+      setProviders([{
+        id: 'esewa-static',
+        name: 'esewa',
+        display_name: 'eSewa',
+        provider_type: 'wallet',
+        payment_methods: ['wallet'],
+        fee_structure: { percentage: 0, fixed: 0 },
+        processing_time: 'Instant'
+      } as any]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Disable changing provider (only eSewa) so remove handleProviderChange side effects
+  const handleProviderChange = (providerName: string) => {
+    if (providerName !== 'esewa') return; // ignore other clicks
+    setSelectedProvider('esewa');
+    setSelectedMethod('wallet');
+  };
   const calculateFees = async () => {
     try {
+      // call backend only if endpoint exists; fallback to simple fee (none)
       const response = await apiService.post('/payments-v2/calculate-fees', {
         amount,
-        provider_name: selectedProvider
-      });
-      setFees(response.fees);
-    } catch (error) {
-      console.error('Failed to calculate fees:', error);
-    }
+        provider_name: 'esewa'
+      }).catch(() => ({ fees: { gross_amount: amount, net_amount: amount, gateway_fee: 0, platform_fee: 0 }}));
+      setFees(response.fees || { gross_amount: amount, net_amount: amount, gateway_fee: 0, platform_fee: 0 });
+    } catch {/* silent */}
   };
 
   const getProviderIcon = (providerType: string, providerName: string) => {
@@ -160,14 +175,6 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
     }
   };
 
-  const handleProviderChange = (providerName: string) => {
-    setSelectedProvider(providerName);
-    const provider = providers.find(p => p.name === providerName);
-    if (provider && provider.payment_methods.length > 0) {
-      setSelectedMethod(provider.payment_methods[0]);
-    }
-  };
-
   const validateForm = () => {
     if (!customerInfo.name || !customerInfo.email) {
       toast({
@@ -195,81 +202,35 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
 
   const processPayment = async () => {
     if (!validateForm()) return;
-
     try {
       setProcessingPayment(true);
-
-      // Create payment
-      const paymentData = {
-        payment_provider: selectedProvider,
-        payment_method: selectedMethod,
+      const paymentData: any = {
+        payment_provider: 'esewa',
+        payment_method: 'wallet',
         customer_info: customerInfo
       };
-
-      // Add card details for Stripe
-      if (selectedMethod === 'card' && selectedProvider === 'stripe') {
-        paymentData.card_details = paymentForm;
-      }
-
       const response = await apiService.post(`/payments-v2/orders/${orderId}/pay`, paymentData);
-
-      if (response.success) {
-        const { transaction_id, payment_result } = response;
-
-        // Handle different payment types
-        switch (payment_result.payment_type) {
-          case 'redirect':
-            // For eSewa, Khalti redirect
-            if (payment_result.form_data) {
-              submitPaymentForm(payment_result.payment_url, payment_result.form_data, payment_result.method);
-            } else {
-              window.open(payment_result.payment_url, '_blank');
-            }
-            break;
-
-          case 'client_secret':
-            // For Stripe payment intent
-            handleStripePayment(payment_result.client_secret);
-            break;
-
-          case 'widget':
-            // For Khalti widget
-            handleKhaltiWidget(payment_result.widget_data, payment_result.public_key);
-            break;
-
-          case 'bank_transfer':
-            // Show bank transfer instructions
-            showBankTransferInstructions(payment_result.bank_details, payment_result.instructions);
-            break;
-
-          default:
-            toast({
-              title: "Payment Initiated",
-              description: "Please follow the instructions to complete your payment.",
-            });
+      if (response.success && response.payment_result?.payment_type === 'redirect') {
+        if (response.payment_result.form_data) {
+          submitPaymentForm(response.payment_result.payment_url, response.payment_result.form_data, response.payment_result.method);
+        } else if (response.payment_result.payment_url) {
+          window.open(response.payment_result.payment_url, '_blank');
         }
-
-        // Notify parent component
-        if (onPaymentSuccess) {
-          onPaymentSuccess(transaction_id);
-        }
+        if (onPaymentSuccess) onPaymentSuccess(response.transaction_id);
+      } else {
+        // Fallback simple initiate eSewa legacy if enhanced route not available
+        try {
+          const legacy = await apiService.initiateEsewaPayment(orderId);
+          if (legacy?.form) {
+            submitPaymentForm(legacy.action, legacy.form, 'POST');
+          }
+        } catch {/* ignore */}
       }
-    } catch (error) {
-      console.error('Payment processing error:', error);
-      const errorMessage = error.response?.data?.error || 'Payment processing failed';
-      
-      toast({
-        title: "Payment Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-
-      if (onPaymentError) {
-        onPaymentError(errorMessage);
-      }
-    } finally {
-      setProcessingPayment(false);
-    }
+    } catch (error: any) {
+      const msg = error.message || 'Payment processing failed';
+      toast({ title: 'Payment Error', description: msg, variant: 'destructive' });
+      if (onPaymentError) onPaymentError(msg);
+    } finally { setProcessingPayment(false); }
   };
 
   const submitPaymentForm = (actionUrl: string, formData: any, method: string = 'POST') => {
@@ -378,9 +339,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
               <div
                 key={provider.id}
                 className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                  selectedProvider === provider.name
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  'esewa' === provider.name ? 'border-green-500 bg-green-50' : 'border-gray-200'
                 }`}
                 onClick={() => handleProviderChange(provider.name)}
               >
@@ -393,34 +352,38 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
                       {provider.processing_time}
                     </div>
                   </div>
-                  <Badge variant="secondary">
-                    {provider.fee_structure.percentage}%
-                  </Badge>
+                  <Badge variant="secondary">Active</Badge>
                 </div>
               </div>
             ))}
-          </div>
-
-          {currentProvider && currentProvider.payment_methods.length > 1 && (
-            <div>
-              <Label>Payment Method</Label>
-              <Select value={selectedMethod} onValueChange={setSelectedMethod}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currentProvider.payment_methods.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      <div className="flex items-center gap-2">
-                        {getMethodIcon(method)}
-                        <span className="capitalize">{method.replace('_', ' ')}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Static disabled Khalti */}
+            <div className="p-4 border rounded-lg opacity-50 select-none">
+              <div className="flex items-center gap-3">
+                {getProviderIcon('wallet', 'khalti')}
+                <div className="flex-1">
+                  <div className="font-medium">Khalti (Coming Soon)</div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Clock className="h-3 w-3" />Later
+                  </div>
+                </div>
+                <Badge variant="outline">Disabled</Badge>
+              </div>
             </div>
-          )}
+            {/* Static disabled Cash on Arrival */}
+            <div className="p-4 border rounded-lg opacity-50 select-none">
+              <div className="flex items-center gap-3">
+                <Wallet className="h-5 w-5 text-gray-600" />
+                <div className="flex-1">
+                  <div className="font-medium">Cash on Arrival</div>
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Clock className="h-3 w-3" />Not Supported
+                  </div>
+                </div>
+                <Badge variant="outline">Disabled</Badge>
+              </div>
+            </div>
+          </div>
+          {/* No method selector needed since only wallet */}
         </CardContent>
       </Card>
 
@@ -555,19 +518,19 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
       {/* Pay Button */}
       <Button
         onClick={processPayment}
-        disabled={processingPayment || !selectedProvider}
+        disabled={processingPayment || selectedProvider !== 'esewa'}
         className="w-full"
         size="lg"
       >
         {processingPayment ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Processing Payment...
+            Processing eSewa Payment...
           </>
         ) : (
           <>
             <CreditCard className="mr-2 h-4 w-4" />
-            Pay ${fees?.gross_amount.toFixed(2) || amount.toFixed(2)}
+            Pay with eSewa
           </>
         )}
       </Button>

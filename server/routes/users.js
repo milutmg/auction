@@ -415,7 +415,12 @@ router.get('/orders', authenticateToken, async (req, res) => {
     const userId = req.user.id;
     const { type = 'all', page = 1, limit = 10 } = req.query; // type: all, purchases, sales
 
-    let query = `
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Attempt advanced schema first (buyer_id / seller_id / winning_bid_amount, order_status, payment_status)
+    let advancedQuery = `
       SELECT 
         o.id as order_id,
         o.winning_bid_amount,
@@ -445,53 +450,102 @@ router.get('/orders', authenticateToken, async (req, res) => {
       WHERE (o.buyer_id = $1 OR o.seller_id = $1)
     `;
 
-    const params = [userId];
-
+    const advancedParams = [userId];
     if (type === 'purchases') {
-      query += ` AND o.buyer_id = $1`;
+      advancedQuery += ' AND o.buyer_id = $1';
     } else if (type === 'sales') {
-      query += ` AND o.seller_id = $1`;
+      advancedQuery += ' AND o.seller_id = $1';
+    }
+    advancedQuery += ' ORDER BY o.created_at DESC LIMIT $2 OFFSET $3';
+    advancedParams.push(limitNum, offset);
+
+    let result;
+    let totalItems;
+
+    try {
+      result = await db.query(advancedQuery, advancedParams);
+      // Count for advanced schema
+      let countQuery = `SELECT COUNT(*) FROM orders o WHERE (o.buyer_id = $1 OR o.seller_id = $1)`;
+      const countParams = [userId];
+      if (type === 'purchases') {
+        countQuery += ' AND o.buyer_id = $1';
+      } else if (type === 'sales') {
+        countQuery += ' AND o.seller_id = $1';
+      }
+      const countResult = await db.query(countQuery, countParams);
+      totalItems = parseInt(countResult.rows[0].count);
+    } catch (err) {
+      // If undefined column error (42703) fallback to basic schema variant
+      if (err.code !== '42703') {
+        throw err; // Different error, rethrow
+      }
+
+      // Basic schema: winner_id, final_amount, status (no buyer_id/seller_id/order_status/payment_status)
+      let basicQuery = `
+        SELECT 
+          o.id as order_id,
+          o.final_amount as winning_bid_amount,
+          -- Map legacy status to payment_status / order_status semantics
+          CASE WHEN o.status IN ('paid') THEN 'paid' ELSE 'pending' END as payment_status,
+          o.payment_method,
+            o.status as order_status,
+          o.tracking_number,
+          NULL::timestamp as estimated_delivery,
+          NULL::timestamp as delivered_at,
+          o.created_at,
+          a.id as auction_id,
+          a.title,
+          a.description,
+          a.image_url,
+          c.name as category_name,
+          winner.full_name as buyer_name,
+          seller.full_name as seller_name,
+          CASE 
+            WHEN o.winner_id = $1 THEN 'purchase'
+            WHEN a.seller_id = $1 THEN 'sale'
+          END as order_type
+        FROM orders o
+        INNER JOIN auctions a ON o.auction_id = a.id
+        INNER JOIN categories c ON a.category_id = c.id
+        INNER JOIN users winner ON o.winner_id = winner.id
+        INNER JOIN users seller ON a.seller_id = seller.id
+        WHERE (o.winner_id = $1 OR a.seller_id = $1)
+      `;
+      const basicParams = [userId];
+      if (type === 'purchases') {
+        basicQuery += ' AND o.winner_id = $1';
+      } else if (type === 'sales') {
+        basicQuery += ' AND a.seller_id = $1';
+      }
+      basicQuery += ' ORDER BY o.created_at DESC LIMIT $2 OFFSET $3';
+      basicParams.push(limitNum, offset);
+      result = await db.query(basicQuery, basicParams);
+
+      // Count for basic schema
+      let countQuery = `SELECT COUNT(*) FROM orders o INNER JOIN auctions a ON o.auction_id = a.id WHERE (o.winner_id = $1 OR a.seller_id = $1)`;
+      const countParams = [userId];
+      if (type === 'purchases') {
+        countQuery += ' AND o.winner_id = $1';
+      } else if (type === 'sales') {
+        countQuery += ' AND a.seller_id = $1';
+      }
+      const countResult = await db.query(countQuery, countParams);
+      totalItems = parseInt(countResult.rows[0].count);
     }
 
-    query += ` ORDER BY o.created_at DESC`;
+    const totalPages = Math.ceil(totalItems / limitNum);
 
-    // Add pagination
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    params.push(parseInt(limit), offset);
-    query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
-
-    const result = await db.query(query, params);
-
-    // Get total count
-    let countQuery = `
-      SELECT COUNT(*) 
-      FROM orders 
-      WHERE (buyer_id = $1 OR seller_id = $1)
-    `;
-    const countParams = [userId];
-
-    if (type === 'purchases') {
-      countQuery += ` AND buyer_id = $1`;
-    } else if (type === 'sales') {
-      countQuery += ` AND seller_id = $1`;
-    }
-
-    const countResult = await db.query(countQuery, countParams);
-    const totalItems = parseInt(countResult.rows[0].count);
-    const totalPages = Math.ceil(totalItems / parseInt(limit));
-
-    res.json({
+    return res.json({
       orders: result.rows,
       pagination: {
-        current_page: parseInt(page),
+        current_page: pageNum,
         total_pages: totalPages,
         total_items: totalItems,
-        items_per_page: parseInt(limit)
+        items_per_page: limitNum
       }
     });
-
   } catch (error) {
-    console.error('Get user orders error:', error);
+    console.error('Get user orders error (unhandled):', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
