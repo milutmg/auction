@@ -22,6 +22,7 @@ import Account from './pages/Account';
 import About from './pages/About';
 import Categories from './pages/Categories';
 import CategoryDetail from './pages/CategoryDetail';
+import TestEsewa from './pages/TestEsewa';
 
 import NotFound from './pages/NotFound';
 import NotificationDemo from './components/demo/NotificationDemo';
@@ -68,6 +69,7 @@ const App: React.FC = () => {
                 <Route path="/categories/:categoryName" element={<CategoryDetail />} />
                 <Route path="/demo/notifications" element={<NotificationDemo />} />
                 <Route path="/debug" element={<Debug />} />
+                <Route path="/test-esewa" element={<TestEsewa />} />
                 
                 {/* Protected routes (require authentication) */}
                 <Route path="/auctions/:id/live" element={

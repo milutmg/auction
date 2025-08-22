@@ -507,6 +507,10 @@ const Navbar = () => {
                 <Folder size={16} className="opacity-80 group-hover:opacity-100" />
                 Categories
               </Link>
+              <Link to="/test-esewa" className={`group flex items-center gap-2 px-3 py-2 rounded-md transition ${isActivePath('/test-esewa') ? 'bg-gold/15 text-gold shadow-inner' : 'text-gray-700 hover:bg-amber-50 hover:text-gold'}`} onClick={()=>setIsMobileMenuOpen(false)}>
+                <CreditCard size={16} className="opacity-80 group-hover:opacity-100" />
+                Test eSewa
+              </Link>
               {user && (
                 <>
                   <Link to="/dashboard" className={`group flex items-center gap-2 px-3 py-2 rounded-md transition ${isActivePath('/dashboard') ? 'bg-gold/15 text-gold shadow-inner' : 'text-gray-700 hover:bg-amber-50 hover:text-gold'}`} onClick={()=>setIsMobileMenuOpen(false)}>
