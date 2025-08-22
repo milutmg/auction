@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const fetch = require('node-fetch');
-const { ESEWA_CONFIG, generateEsewaPaymentData, generateProductCode, validateEsewaResponse } = require('../config/esewa');
+const { ESEWA_CONFIG, generateEsewaPaymentData, generateEsewaV2PaymentData, generateProductCode, validateEsewaResponse } = require('../config/esewa');
 
 /**
  * eSewa Payment Service
@@ -37,7 +37,7 @@ class EsewaPaymentService {
         failureUrl: `${ESEWA_CONFIG.FAILURE_URL}?orderId=${orderId}`
       };
 
-      // Generate form data for eSewa
+      // Generate form data for eSewa v2
       const formData = this.generatePaymentFormData(paymentData);
       
       // Store payment session (you might want to store this in Redis or database)
@@ -69,7 +69,7 @@ class EsewaPaymentService {
   }
 
   /**
-   * Generate form data for eSewa payment
+   * Generate form data for eSewa payment (v2 format)
    * @param {Object} paymentData - Payment parameters
    * @returns {Object} Form data object
    */
@@ -86,17 +86,37 @@ class EsewaPaymentService {
 
     const totalAmount = amount + taxAmount + serviceCharge + deliveryCharge;
 
+    // Generate transaction UUID
+    const transactionUuid = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Generate signature for v2 API
+    const signedFieldNames = 'total_amount,transaction_uuid,product_code';
+    const message = `total_amount=${totalAmount.toFixed(2)},transaction_uuid=${transactionUuid},product_code=${ESEWA_CONFIG.MERCHANT_CODE}`;
+    const signature = this.generateSignature(message, ESEWA_CONFIG.TEST_CREDENTIALS.secretKey);
+
     return {
-      amt: amount.toFixed(2),
-      txAmt: taxAmount.toFixed(2),
-      psc: serviceCharge.toFixed(2),
-      pdc: deliveryCharge.toFixed(2),
-      tAmt: totalAmount.toFixed(2),
-      pid: productCode,
-      scd: ESEWA_CONFIG.MERCHANT_CODE,
-      su: successUrl,
-      fu: failureUrl
+      amount: amount.toFixed(2),
+      tax_amount: taxAmount.toFixed(2),
+      total_amount: totalAmount.toFixed(2),
+      transaction_uuid: transactionUuid,
+      product_code: ESEWA_CONFIG.MERCHANT_CODE,
+      product_service_charge: serviceCharge.toFixed(2),
+      product_delivery_charge: deliveryCharge.toFixed(2),
+      success_url: successUrl,
+      failure_url: failureUrl,
+      signed_field_names: signedFieldNames,
+      signature: signature
     };
+  }
+
+  /**
+   * Generate signature for eSewa v2 API
+   * @param {string} message - Message to sign
+   * @param {string} secretKey - Secret key for signing
+   * @returns {string} Base64 encoded signature
+   */
+  static generateSignature(message, secretKey) {
+    return crypto.createHmac('sha256', secretKey).update(message).digest('base64');
   }
 
   /**
