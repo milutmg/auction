@@ -265,8 +265,7 @@ const AuctionDetail = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow pt-24 pb-20">
+       <main className="flex-grow pt-24 pb-20">
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -557,7 +556,6 @@ const AuctionDetail = () => {
           </div>
         </section>
       </main>
-      <Footer />
     </div>
   );
 };
