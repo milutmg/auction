@@ -417,58 +417,105 @@ router.put('/change-password', authenticateToken, async (req, res) => {
 });
 
 // Google OAuth routes
-// Check if we're in development mode with mock credentials
-const isDevelopmentMode = process.env.NODE_ENV === 'development' && 
-  process.env.GOOGLE_CLIENT_ID.includes('abcdefghijklmnop');
+// Robust configuration detection
+const googleConfigured = Boolean(
+  process.env.GOOGLE_CLIENT_ID &&
+  process.env.GOOGLE_CLIENT_SECRET &&
+  process.env.GOOGLE_CALLBACK_URL &&
+  /\.apps\.googleusercontent\.com$/.test(process.env.GOOGLE_CLIENT_ID)
+);
+const useMockAlways = (process.env.USE_GOOGLE_OAUTH_MOCK || '').toLowerCase() === 'true';
 
-// Development mock Google OAuth
-if (isDevelopmentMode) {
-  router.get('/google', (req, res) => {
-    // Mock Google OAuth flow for development
+// Helper to decide mock usage
+function shouldUseMock(req) {
+  const env = process.env.NODE_ENV || 'development';
+  const queryForMock = (req.query.mode || '').toString().toLowerCase() === 'mock';
+  return useMockAlways || (!googleConfigured && env !== 'production') || queryForMock;
+}
+
+// Single route that chooses mock or real at request time
+router.get('/google', (req, res, next) => {
+  if (shouldUseMock(req)) {
     const mockUser = {
-      id: 1,
+      id: '00000000-0000-0000-0000-000000000001',
       email: 'demo@example.com',
       full_name: 'Demo User',
       role: 'user',
       is_active: true,
       is_verified: true
     };
-    
-    // Generate JWT token
     const token = jwt.sign(
       { userId: mockUser.id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
-    
-    // Redirect with mock data
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(mockUser))}`);
-  });
-} else {
-  // Real Google OAuth
-  router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
-  }));
-}
+    return res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(mockUser))}`);
+  }
+
+  if (!googleConfigured) {
+    return res.redirect(`${process.env.FRONTEND_URL}/auth?error=google_not_configured`);
+  }
+  return passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
 
 // Google OAuth callback
-router.get('/google/callback', passport.authenticate('google', {
-  failureRedirect: `${process.env.FRONTEND_URL}/auth?error=oauth_failed`
-}), async (req, res) => {
+router.get('/google/callback', (req, res, next) => {
+  if (!googleConfigured) {
+    return res.redirect(`${process.env.FRONTEND_URL}/auth?error=google_not_configured`);
+  }
+  return passport.authenticate('google', {
+    failureRedirect: `${process.env.FRONTEND_URL}/auth?error=oauth_failed`,
+  })(req, res, next);
+}, async (req, res) => {
   try {
-    // Generate JWT token for the authenticated user
+    // Ensure user exists and fetch password_hash
+    const userId = req.user.id;
+    const userResult = await db.query(
+      'SELECT id, email, full_name, password_hash FROM users WHERE id = $1',
+      [userId]
+    );
+    const userRow = userResult.rows[0];
+
+    let otpSent = false;
+    // If the user has no password yet, generate a one-time password and email it
+    if (!userRow.password_hash) {
+      const tempPassword = crypto.randomBytes(4).toString('hex'); // 8-char OTP-like password
+      const saltRounds = 12;
+      const passwordHash = await bcrypt.hash(tempPassword, saltRounds);
+      await db.query('UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [passwordHash, userId]);
+      // Send email with the temporary password
+      const subject = 'Your one-time password for Antique Auction';
+      const html = `
+        <p>Hello ${userRow.full_name || ''},</p>
+        <p>You signed in with Google. For convenience, we've generated a one-time password you can also use to sign in with your email in the future:</p>
+        <p style="font-size:18px"><strong>${tempPassword}</strong></p>
+        <p>You may change your password anytime from your profile settings.</p>
+        <p>If you did not request this, please secure your account.</p>
+      `;
+      await sendEmail(userRow.email, subject, html);
+      otpSent = true;
+    }
+
+    // Issue JWT for application session
     const token = jwt.sign(
-      { userId: req.user.id },
+      { userId: userId },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-    // Redirect to frontend with token
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+    // Redirect back to frontend callback route with token and user info
+    const qs = `token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}${otpSent ? '&otp_sent=1' : ''}`;
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?${qs}`);
   } catch (error) {
     console.error('Google OAuth callback error:', error);
     res.redirect(`${process.env.FRONTEND_URL}/auth?error=callback_failed`);
   }
+});
+
+// Expose config status for frontend
+router.get('/google/config', (req, res) => {
+  const env = process.env.NODE_ENV || 'development';
+  res.json({ enabled: googleConfigured, environment: env, mock: shouldUseMock({ query: {} }) });
 });
 
 // Get user's orders
@@ -718,3 +765,42 @@ router.get('/public-stats', async (req, res) => {
 });
 
 module.exports = router;
+
+// Lightweight mail sender using nodemailer (uses SMTP_* env vars)
+let mailer = null;
+try {
+  const nodemailer = require('nodemailer');
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  if (smtpHost && smtpUser && smtpPass) {
+    mailer = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass }
+    });
+  }
+} catch (e) {
+  // nodemailer not installed or misconfigured; skip mailing
+}
+
+async function sendEmail(to, subject, html) {
+  try {
+    if (!mailer) {
+      console.log('[MAIL DEV]', { to, subject });
+      return { queued: true, dev: true };
+    }
+    await mailer.sendMail({
+      from: process.env.MAIL_FROM || process.env.SMTP_USER,
+      to,
+      subject,
+      html
+    });
+    return { queued: true };
+  } catch (e) {
+    console.error('Failed to send email:', e.message);
+    return { queued: false, error: e.message };
+  }
+}

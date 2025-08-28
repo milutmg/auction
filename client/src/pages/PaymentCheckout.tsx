@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import apiService from '@/services/api';
 
 interface Order {
-  id: string;
+  id: string; // normalized id (from order_id)
   auction_id: string;
   auction_title: string;
   auction_description: string;
@@ -20,7 +20,7 @@ interface Order {
   order_status: string;
   seller_name: string;
   created_at: string;
-  estimated_delivery: string;
+  estimated_delivery: string | null;
 }
 
 const PaymentCheckout: React.FC = () => {
@@ -44,13 +44,29 @@ const PaymentCheckout: React.FC = () => {
     }
   }, [orderId, user, navigate]);
 
+  const normalizeOrder = (raw: any): Order => {
+    return {
+      id: raw.order_id || raw.id,
+      auction_id: raw.auction_id,
+      auction_title: raw.auction_title || raw.title,
+      auction_description: raw.auction_description || raw.description || '',
+      auction_image_url: raw.auction_image_url || raw.image_url || '/placeholder.svg',
+      winning_bid_amount: Number(raw.winning_bid_amount ?? raw.final_amount ?? 0),
+      payment_status: raw.payment_status || raw.status || 'pending',
+      order_status: raw.order_status || raw.status || 'pending',
+      seller_name: raw.seller_name || '',
+      created_at: raw.created_at,
+      estimated_delivery: raw.estimated_delivery || null
+    };
+  };
+
   const loadOrder = async () => {
     try {
       setLoading(true);
       const response = await apiService.get(`/users/orders?type=purchases`);
-      const foundOrder = response.orders.find((o: Order) => o.id === orderId);
+      const raw = (response.orders || []).find((o: any) => (o.order_id || o.id)?.toString() === orderId);
       
-      if (!foundOrder) {
+      if (!raw) {
         toast({
           title: "Order Not Found",
           description: "The requested order could not be found.",
@@ -60,11 +76,12 @@ const PaymentCheckout: React.FC = () => {
         return;
       }
 
-      if (foundOrder.payment_status === 'paid') {
+      const normalized = normalizeOrder(raw);
+      if (normalized.payment_status === 'paid') {
         setPaymentCompleted(true);
       }
 
-      setOrder(foundOrder);
+      setOrder(normalized);
     } catch (error) {
       console.error('Failed to load order:', error);
       toast({
@@ -108,7 +125,7 @@ const PaymentCheckout: React.FC = () => {
       completed: { variant: 'default' as const, label: 'Completed' }
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = (statusConfig as any)[status] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 

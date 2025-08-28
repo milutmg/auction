@@ -50,44 +50,56 @@ class SocketService {
   private socket: Socket | null = null;
   private serverUrl: string;
   private reconnectCallbacks: Array<() => void> = [];
+  private connectingPromise: Promise<Socket> | null = null;
 
   constructor() {
-    this.serverUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3002';
+    this.serverUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
   }
 
   onReconnect(cb: () => void) { this.reconnectCallbacks.push(cb); }
 
   connect(): Promise<Socket> {
-    return new Promise((resolve, reject) => {
-      if (this.socket?.connected) {
-        resolve(this.socket);
-        return;
-      }
+    // If already connected, resolve immediately
+    if (this.socket?.connected) {
+      return Promise.resolve(this.socket);
+    }
+    // If a connection is in progress, return the same promise
+    if (this.connectingPromise) {
+      return this.connectingPromise;
+    }
 
+    // If socket exists but not connected, reuse it; otherwise create
+    if (!this.socket) {
       this.socket = io(this.serverUrl, {
         transports: ['websocket', 'polling'],
         timeout: 5000,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 500,
+        reconnectionDelayMax: 5000,
       });
+    }
 
-      this.socket.on('connect', () => {
+    this.connectingPromise = new Promise((resolve, reject) => {
+      const onConnect = () => {
         console.log('Connected to server:', this.socket?.id);
+        this.socket?.off('connect_error', onError);
+        this.connectingPromise = null;
         resolve(this.socket!);
-      });
-
-      this.socket.on('reconnect', () => {
-        console.log('Socket reconnected');
-        this.reconnectCallbacks.forEach(cb => { try { cb(); } catch {} });
-      });
-
-      this.socket.on('connect_error', (error) => {
+      };
+      const onError = (error: any) => {
         console.error('Connection error:', error);
+        this.socket?.off('connect', onConnect);
+        this.connectingPromise = null;
         reject(error);
-      });
+      };
 
-      this.socket.on('disconnect', (reason) => {
-        console.log('Disconnected from server:', reason);
-      });
+      // Ensure listeners are attached only once per attempt
+      this.socket!.once('connect', onConnect);
+      this.socket!.once('connect_error', onError);
     });
+
+    return this.connectingPromise;
   }
 
   async fetchPendingPaymentEvents(userId: string) {
@@ -102,6 +114,7 @@ class SocketService {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      this.connectingPromise = null;
     }
   }
 

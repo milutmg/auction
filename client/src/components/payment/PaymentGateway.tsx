@@ -334,55 +334,59 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
           <CardTitle>Choose Payment Method</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Provider dropdown + details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {providers.map((provider) => (
-              <div
-                key={provider.id}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                  'esewa' === provider.name ? 'border-green-500 bg-green-50' : 'border-gray-200'
-                }`}
-                onClick={() => handleProviderChange(provider.name)}
-              >
-                <div className="flex items-center gap-3">
-                  {getProviderIcon(provider.provider_type, provider.name)}
-                  <div className="flex-1">
-                    <div className="font-medium">{provider.display_name}</div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Clock className="h-3 w-3" />
-                      {provider.processing_time}
-                    </div>
-                  </div>
-                  <Badge variant="secondary">Active</Badge>
-                </div>
-              </div>
-            ))}
-            {/* Static disabled Khalti */}
-            <div className="p-4 border rounded-lg opacity-50 select-none">
-              <div className="flex items-center gap-3">
-                {getProviderIcon('wallet', 'khalti')}
-                <div className="flex-1">
-                  <div className="font-medium">Khalti (Coming Soon)</div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Clock className="h-3 w-3" />Later
-                  </div>
-                </div>
-                <Badge variant="outline">Disabled</Badge>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="provider">Payment Provider</Label>
+              <Select value={selectedProvider} onValueChange={handleProviderChange}>
+                <SelectTrigger id="provider" className="w-full">
+                  <SelectValue placeholder="Select a provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {providers.map((provider) => (
+                    <SelectItem key={provider.name} value={provider.name}>
+                      {provider.display_name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="khalti" disabled>
+                    Khalti (Coming soon)
+                  </SelectItem>
+                  <SelectItem value="cash" disabled>
+                    Cash on Arrival (Not supported)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            {/* Static disabled Cash on Arrival */}
-            <div className="p-4 border rounded-lg opacity-50 select-none">
-              <div className="flex items-center gap-3">
-                <Wallet className="h-5 w-5 text-gray-600" />
-                <div className="flex-1">
-                  <div className="font-medium">Cash on Arrival</div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Clock className="h-3 w-3" />Not Supported
-                  </div>
-                </div>
-                <Badge variant="outline">Disabled</Badge>
+            <div className="space-y-2">
+              <Label>Processing Time</Label>
+              <div className="flex items-center gap-2 p-3 rounded border bg-muted/30">
+                <Clock className="h-4 w-4" />
+                <span>{currentProvider?.processing_time || 'Instant'}</span>
               </div>
             </div>
           </div>
+
+          {currentProvider && (
+            <div className="p-4 rounded-lg border bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {getProviderIcon(currentProvider.provider_type, currentProvider.name)}
+                  <div>
+                    <div className="font-medium">{currentProvider.display_name}</div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      {currentProvider.payment_methods?.map((m) => (
+                        <span key={m} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border">
+                          {getMethodIcon(m)}
+                          <span className="capitalize">{m.replace('_', ' ')}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <Badge variant="secondary">Active</Badge>
+              </div>
+            </div>
+          )}
           {/* No method selector needed since only wallet */}
         </CardContent>
       </Card>

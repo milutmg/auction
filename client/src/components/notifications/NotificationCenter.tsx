@@ -108,16 +108,11 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
 
   useEffect(() => {
     fetchNotifications();
-    
-    // Connect to socket for real-time notifications
-    socketService.connect().then(() => {
-      socketService.onNewNotification(handleNewNotification);
-    }).catch(error => {
-      console.error('Failed to connect to socket service:', error);
-    });
-
+    // Attach to existing socket only
+    const handler = (n:any) => handleNewNotification(n);
+    socketService.onNewNotification(handler);
     return () => {
-      socketService.offNewNotification(handleNewNotification);
+      socketService.offNewNotification(handler);
     };
   }, []);
 

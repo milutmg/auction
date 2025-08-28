@@ -115,7 +115,7 @@ router.get('/activity', authenticateToken, adminOnly, async (req, res) => {
       JOIN users u ON b.bidder_id = u.id
       ORDER BY b.created_at DESC
       LIMIT $1
-    `, [limit / 2]);
+    `, [Math.floor(limit / 2)]);
 
     // Recent auctions
     const auctionsResult = await db.query(`
@@ -131,7 +131,7 @@ router.get('/activity', authenticateToken, adminOnly, async (req, res) => {
       WHERE a.approval_status = 'approved'
       ORDER BY a.created_at DESC
       LIMIT $1
-    `, [limit / 2]);
+    `, [Math.floor(limit / 2)]);
 
     // Recent registrations
     const usersResult = await db.query(`

@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fetch = require('node-fetch');
 const db = require('../config/database');
+const { ESEWA_CONFIG, generateEsewaV2FormFields, MERCHANT_ID } = require('../config/esewa');
 
 /**
  * Unified Payment Gateway Service
@@ -181,34 +182,55 @@ class PaymentGatewayService {
    */
   static async initiateEsewaPayment(transaction, paymentData) {
     try {
-      const config = transaction.configuration;
-      const productCode = `AUCTION_${transaction.auction_id}_${Date.now()}`;
+      // Prefer eSewa v2 (rc-epay) form
+      const transaction_uuid = transaction.transaction_id;
+      const amount = parseFloat(transaction.gross_amount);
+      const tax_amount = 0;
 
-      const formData = {
-        tAmt: transaction.gross_amount,
-        amt: transaction.gross_amount,
-        txAmt: 0,
-        psc: 0,
-        pdc: 0,
-        scd: config.merchant_id,
-        pid: productCode,
-        su: transaction.success_url || `${process.env.FRONTEND_URL}/payment/success`,
-        fu: transaction.failure_url || `${process.env.FRONTEND_URL}/payment/failed`
-      };
+      const fields = generateEsewaV2FormFields({
+        amount,
+        tax_amount,
+        transaction_uuid,
+        success_url: transaction.success_url || ESEWA_CONFIG.V2_SUCCESS_API,
+        failure_url: transaction.failure_url || ESEWA_CONFIG.V2_FAILURE_API,
+        product_code: MERCHANT_ID,
+      });
 
       return {
         success: true,
-        payment_type: 'redirect',
-        payment_url: 'https://uat.esewa.com.np/epay/main',
-        form_data: formData,
+        payment_type: 'redirect_form',
+        payment_url: ESEWA_CONFIG.V2_FORM_URL,
+        form_data: fields,
         method: 'POST',
-        message: 'Redirect to eSewa payment gateway'
+        message: 'Redirect to eSewa v2 payment gateway'
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
+      // Fallback to legacy v1 shape if helpers are unavailable
+      try {
+        const config = transaction.configuration || {};
+        const productCode = `AUCTION_${transaction.auction_id || 'GEN'}_${Date.now()}`;
+        const formData = {
+          tAmt: transaction.gross_amount,
+          amt: transaction.gross_amount,
+          txAmt: 0,
+          psc: 0,
+          pdc: 0,
+          scd: config.merchant_id || MERCHANT_ID,
+          pid: productCode,
+          su: transaction.success_url || `${process.env.FRONTEND_URL}/payment/success`,
+          fu: transaction.failure_url || `${process.env.FRONTEND_URL}/payment/failure`
+        };
+        return {
+          success: true,
+          payment_type: 'redirect',
+          payment_url: ESEWA_CONFIG.PAYMENT_URL,
+          form_data: formData,
+          method: 'POST',
+          message: 'Redirect to eSewa payment gateway (legacy)'
+        };
+      } catch (inner) {
+        return { success: false, error: inner.message || error.message };
+      }
     }
   }
 
@@ -389,20 +411,14 @@ class PaymentGatewayService {
   }
 
   /**
-   * Verify eSewa payment
+   * Verify eSewa payment (legacy v1 placeholder; v2 verification is handled in routes)
    */
   static async verifyEsewaPayment(transaction, esewaData) {
     try {
-      // eSewa verification logic
       const { oid, amt, refId } = esewaData;
-      
       if (parseFloat(amt) !== transaction.gross_amount) {
-        return {
-          success: false,
-          error: 'Amount mismatch'
-        };
+        return { success: false, error: 'Amount mismatch' };
       }
-
       return {
         success: true,
         external_transaction_id: refId,
@@ -410,10 +426,7 @@ class PaymentGatewayService {
         provider_reference: oid
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error.message
-      };
+      return { success: false, error: error.message };
     }
   }
 

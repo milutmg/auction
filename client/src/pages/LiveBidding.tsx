@@ -10,6 +10,8 @@ import { Clock, Gavel, Users, Wifi, WifiOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import LiveBiddingChat from '@/components/bidding/LiveBiddingChat';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 interface Auction {
   id: string;
   title: string;
@@ -79,7 +81,7 @@ const LiveBidding = () => {
   }, [auctionUpdates, recentBids]);
   const fetchActiveAuctions = async () => {
     try {
-      const response = await fetch('http://localhost:3002/api/auctions?status=active', {
+      const response = await fetch(`${API_BASE_URL}/auctions?status=active`, {
         headers: {
           'Content-Type': 'application/json',
           // Include auth header if user is logged in
@@ -141,7 +143,7 @@ const LiveBidding = () => {
 
     try {
       // Place bid via backend API
-      const response = await fetch('http://localhost:3002/api/bids', {
+      const response = await fetch(`${API_BASE_URL}/bids`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

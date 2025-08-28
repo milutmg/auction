@@ -1,6 +1,12 @@
 const crypto = require('crypto');
 const fetch = require('node-fetch');
-const { ESEWA_CONFIG, generateEsewaPaymentData, generateProductCode, validateEsewaResponse } = require('../config/esewa');
+const {
+  ESEWA_CONFIG,
+  generateEsewaPaymentData, // v1 legacy
+  generateProductCode,
+  validateEsewaResponse, // v1 legacy
+  generateEsewaV2FormFields, // v2
+} = require('../config/esewa');
 
 /**
  * eSewa Payment Service
@@ -9,7 +15,7 @@ const { ESEWA_CONFIG, generateEsewaPaymentData, generateProductCode, validateEse
 class EsewaPaymentService {
   
   /**
-   * Initiate eSewa payment for an auction order
+   * Initiate eSewa payment for an auction order (v2 preferred)
    * @param {Object} orderData - Order information
    * @returns {Object} Payment initialization data
    */
@@ -23,39 +29,35 @@ class EsewaPaymentService {
         winnerEmail
       } = orderData;
 
-      // Generate unique product code
-      const productCode = generateProductCode(auctionId, orderId);
+      // Use payment transaction UUID as unique id when available; fallback to generated code
+      const transaction_uuid = `ORD_${orderId}_${Date.now()}`;
 
-      // Prepare payment data
-      const paymentData = {
+      // Prepare v2 form fields
+      const fields = generateEsewaV2FormFields({
         amount: parseFloat(amount),
-        taxAmount: 0, // No tax for auctions in test environment
-        serviceCharge: 0, // No service charge for test
-        deliveryCharge: 0, // No delivery charge for test
-        productCode: productCode,
-        successUrl: `${ESEWA_CONFIG.SUCCESS_URL}?orderId=${orderId}`,
-        failureUrl: `${ESEWA_CONFIG.FAILURE_URL}?orderId=${orderId}`
-      };
+        tax_amount: 0,
+        transaction_uuid,
+        success_url: `${ESEWA_CONFIG.V2_SUCCESS_API}?order_id=${orderId}`,
+        failure_url: `${ESEWA_CONFIG.V2_FAILURE_API}?order_id=${orderId}`,
+      });
 
-      // Generate form data for eSewa
-      const formData = this.generatePaymentFormData(paymentData);
-      
-      // Store payment session (you might want to store this in Redis or database)
+      // Keep a simple session object for debug/audit (optional)
       const paymentSession = {
         orderId,
         auctionId,
-        productCode,
-        amount: paymentData.amount,
+        transaction_uuid,
+        amount: fields.total_amount,
         createdAt: new Date().toISOString(),
-        status: 'initiated'
+        status: 'initiated',
+        via: 'esewa_v2'
       };
 
       return {
         success: true,
-        paymentUrl: ESEWA_CONFIG.PAYMENT_URL,
-        formData,
+        paymentUrl: ESEWA_CONFIG.V2_FORM_URL,
+        formData: fields,
         paymentSession,
-        message: 'Payment initiated successfully'
+        message: 'Payment initiated successfully (eSewa v2)'
       };
 
     } catch (error) {
@@ -69,38 +71,17 @@ class EsewaPaymentService {
   }
 
   /**
-   * Generate form data for eSewa payment
+   * Generate form data for eSewa payment (v1 legacy)
    * @param {Object} paymentData - Payment parameters
    * @returns {Object} Form data object
    */
   static generatePaymentFormData(paymentData) {
-    const {
-      amount,
-      taxAmount,
-      serviceCharge,
-      deliveryCharge,
-      productCode,
-      successUrl,
-      failureUrl
-    } = paymentData;
-
-    const totalAmount = amount + taxAmount + serviceCharge + deliveryCharge;
-
-    return {
-      amt: amount.toFixed(2),
-      txAmt: taxAmount.toFixed(2),
-      psc: serviceCharge.toFixed(2),
-      pdc: deliveryCharge.toFixed(2),
-      tAmt: totalAmount.toFixed(2),
-      pid: productCode,
-      scd: ESEWA_CONFIG.MERCHANT_CODE,
-      su: successUrl,
-      fu: failureUrl
-    };
+    // Delegate to legacy helper for backward compatibility
+    return generateEsewaPaymentData(paymentData);
   }
 
   /**
-   * Verify eSewa payment with their verification API
+   * Verify eSewa payment with their verification API (v1 legacy)
    * @param {Object} callbackData - Data received from eSewa callback
    * @returns {Object} Verification result
    */
@@ -123,7 +104,7 @@ class EsewaPaymentService {
         pid: productCode
       };
 
-      // Make verification request to eSewa
+      // Make verification request to eSewa (v1 transrec)
       const verificationResponse = await this.makeVerificationRequest(verificationData);
       
       if (verificationResponse.success) {
@@ -154,7 +135,7 @@ class EsewaPaymentService {
   }
 
   /**
-   * Make verification request to eSewa API
+   * Make verification request to eSewa API (v1 legacy)
    * @param {Object} verificationData - Data for verification
    * @returns {Object} API response
    */
@@ -202,7 +183,7 @@ class EsewaPaymentService {
   }
 
   /**
-   * Handle payment success callback
+   * Handle payment success callback (v1 legacy utility)
    * @param {Object} callbackData - eSewa success callback data
    * @param {string} orderId - Order ID from URL parameter
    * @returns {Object} Processing result

@@ -67,7 +67,10 @@ const PaymentForm: React.FC = () => {
     if (method !== 'esewa') return; // only esewa enabled
     setLoading(true);
     try {
-      const resp = await fetch(`/api/payments/pay?auction_id=${selectedAuction.auction_id}`, { headers: { 'Authorization': `Bearer ${token}` }});
+      const base = import.meta.env.VITE_API_URL || '/api';
+      const amountNum = parseFloat(selectedAuction.current_bid);
+      const amount = Number.isFinite(amountNum) ? amountNum.toFixed(2) : '0.00';
+      const resp = await fetch(`${base}/payments/custom-pay?amount=${encodeURIComponent(amount)}`);
       if (!resp.ok) throw new Error('Failed to init payment');
       const html = await resp.text();
       const w = window.open('', '_blank');

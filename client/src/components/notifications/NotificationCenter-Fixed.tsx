@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useSocket } from '@/contexts/SocketContext';
 import { useAuth } from '@/contexts/AuthContext';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 interface Notification {
   id: string;
   type: string;
@@ -96,7 +98,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
         return;
       }
 
-      const response = await fetch('http://localhost:3002/api/notifications', {
+      const response = await fetch(`${API_BASE_URL}/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -159,7 +161,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await fetch(`http://localhost:3002/api/notifications/${notificationId}/read`, {
+        await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -181,7 +183,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ userId }) => {
     try {
       const token = localStorage.getItem('token');
       if (token) {
-        await fetch('http://localhost:3002/api/notifications/mark-all-read', {
+        await fetch(`${API_BASE_URL}/notifications/mark-all-read`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -550,6 +550,109 @@ router.get('/orders', authenticateToken, async (req, res) => {
   }
 });
 
+// Get user's orders (for payments dashboard)
+// Supports type=purchases (won auctions) or type=sales
+router.get('/orders', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { type = 'purchases', page = 1, limit = 20 } = req.query;
+
+  const isPurchases = (type === 'purchases' || type === 'purchase' || type === 'buyer');
+  const isSales = (type === 'sales' || type === 'sale' || type === 'seller');
+
+  const pgLimit = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+  const offset = (Math.max(parseInt(page) || 1, 1) - 1) * pgLimit;
+
+  try {
+    // Try advanced schema first (buyer_id, winning_bid_amount, payment_status)
+    const params = [userId, pgLimit, offset];
+    const whereCol = isSales ? 'o.seller_id' : 'o.buyer_id';
+
+    const q = `
+      SELECT 
+        o.id as order_id,
+        o.auction_id,
+        o.buyer_id,
+        o.seller_id,
+        o.winning_bid_amount,
+        COALESCE(o.payment_status, o.status) AS payment_status,
+        o.created_at,
+        a.title,
+        pt.transaction_id AS payment_transaction_id,
+        pt.status AS payment_tx_status,
+        pt.gross_amount
+      FROM orders o
+      JOIN auctions a ON a.id = o.auction_id
+      LEFT JOIN LATERAL (
+        SELECT p.transaction_id, p.status, p.gross_amount, p.updated_at
+        FROM payment_transactions p
+        WHERE p.order_id = o.id
+        ORDER BY p.updated_at DESC NULLS LAST
+        LIMIT 1
+      ) pt ON TRUE
+      WHERE ${whereCol} = $1
+      ORDER BY o.created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+    const result = await db.query(q, params);
+
+    const orders = result.rows.map(r => ({
+      id: r.order_id,
+      order_id: r.order_id,
+      auction_id: r.auction_id,
+      buyer_id: r.buyer_id,
+      seller_id: r.seller_id,
+      winning_bid_amount: parseFloat(r.winning_bid_amount || r.gross_amount || 0),
+      payment_status: (r.payment_status || (r.payment_tx_status === 'complete' || r.payment_tx_status === 'completed' ? 'paid' : r.payment_tx_status) || 'pending'),
+      created_at: r.created_at,
+      title: r.title,
+      payment_transaction_id: r.payment_transaction_id || null,
+      payment_method: 'esewa'
+    }));
+
+    return res.json({ orders });
+  } catch (err1) {
+    // Fallback to basic schema (winner_id, final_amount)
+    try {
+      const params = [userId, pgLimit, offset];
+      const whereCol = isSales ? 'o.seller_id' : 'o.winner_id';
+      const q2 = `
+        SELECT 
+          o.id as order_id,
+          o.auction_id,
+          o.winner_id as buyer_id,
+          o.seller_id,
+          o.final_amount as winning_bid_amount,
+          COALESCE(o.payment_status, o.status) AS payment_status,
+          o.created_at,
+          a.title
+        FROM orders o
+        JOIN auctions a ON a.id = o.auction_id
+        WHERE ${whereCol} = $1
+        ORDER BY o.created_at DESC
+        LIMIT $2 OFFSET $3
+      `;
+      const result2 = await db.query(q2, params);
+      const orders = result2.rows.map(r => ({
+        id: r.order_id,
+        order_id: r.order_id,
+        auction_id: r.auction_id,
+        buyer_id: r.buyer_id,
+        seller_id: r.seller_id,
+        winning_bid_amount: parseFloat(r.winning_bid_amount || 0),
+        payment_status: r.payment_status || 'pending',
+        created_at: r.created_at,
+        title: r.title,
+        payment_transaction_id: null,
+        payment_method: 'esewa'
+      }));
+      return res.json({ orders });
+    } catch (err2) {
+      console.error('Get orders failed:', err1.message, 'Fallback error:', err2.message);
+      return res.status(500).json({ error: 'Failed to load orders' });
+    }
+  }
+});
+
 // Change password
 router.put('/password', authenticateToken, async (req, res) => {
   try {

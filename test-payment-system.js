@@ -7,8 +7,8 @@
 
 const fetch = require('node-fetch');
 
-const API_BASE = 'http://localhost:3002/api';
-const FRONTEND_BASE = 'http://localhost:5173';
+const API_BASE = 'http://localhost:3001/api';
+const FRONTEND_BASE = 'http://localhost:8080';
 
 // Test credentials
 const TEST_USER = {
@@ -17,7 +17,7 @@ const TEST_USER = {
 };
 
 const ADMIN_USER = {
-  email: 'admin@example.com',
+  email: 'admin@antique-bidderly.com',
   password: 'admin123'
 };
 

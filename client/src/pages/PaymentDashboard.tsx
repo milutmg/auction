@@ -150,11 +150,12 @@ const PaymentDashboard: React.FC = () => {
   };
 
   const startPayment = async (auctionId: string | number) => {
-    if (!auctionId || !token) return;
+    if (!auctionId) return;
     try {
       setInitiating(String(auctionId));
-      // Authenticated fetch to backend to receive payment form HTML
-      const resp = await fetch(`/api/payments/pay?auction_id=${auctionId}`, { headers: { 'Authorization': `Bearer ${token}` }});
+      const base = import.meta.env.VITE_API_URL || '/api';
+      // Prefer order-based flow if your backend expects order_id; fallback to amount if not available
+      const resp = await fetch(`${base}/payments/custom-pay?order_id=${auctionId}`);
       if (!resp.ok) throw new Error('Payment init failed');
       const html = await resp.text();
       const w = window.open('', '_blank');

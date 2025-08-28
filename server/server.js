@@ -24,6 +24,8 @@ const adminBidsRoutes = require('./routes/admin-bids');
 const searchRoutes = require('./routes/search');
 const usersRoutes = require('./routes/users');
 const paymentsEnhancedRoutes = require('./routes/payments-enhanced');
+// New: lightweight HTML form redirect routes for eSewa (custom-pay)
+const paymentsWorkingRoutes = require('./routes/payments-working');
 
 const notificationService = require('./services/notificationService');
 const db = require('./config/database');
@@ -65,13 +67,21 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:", "http:"],
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
-      scriptSrc: ["'self'"],
+      // Allow inline script for auto-submitting eSewa form
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       connectSrc: ["'self'", "ws:", "wss:"],
+      // Allow posting form directly to eSewa endpoints
+      formAction: [
+        "'self'",
+        "https://rc-epay.esewa.com.np",
+        "https://epay.esewa.com.np"
+      ]
     },
   },
 }));
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Session configuration for passport
 app.use(session({
@@ -125,6 +135,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/notifications', notificationsApi);
 app.use('/api/payments', paymentRoutes);
+// New: mount the HTML redirect helper routes alongside legacy payments
+app.use('/api/payments', paymentsWorkingRoutes);
 app.use('/api/esewa', esewaRoutes);
 app.use('/api/admin', adminBidsRoutes);
 app.use('/api/search', searchRoutes);
@@ -273,7 +285,7 @@ io.on('connection', (socket) => {
       // Get auction details and previous bidders
       const auctionResult = await db.query(
         'SELECT title, current_bid FROM auctions WHERE id = $1',
-        [data.auctionId]
+        [ data.auctionId]
       );
       
       if (auctionResult.rows.length === 0) {
@@ -415,20 +427,7 @@ app.use((req, res) => {
 // Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
-  
-  // Start scheduled job to process ended auctions every minute
-  setInterval(async () => {
-    try {
-      const processedCount = await processEndedAuctions();
-      if (processedCount > 0) {
-        console.log(`Processed ${processedCount} ended auctions`);
-      }
-    } catch (error) {
-      console.error('Scheduled auction processing error:', error);
-    }
-  }, 60000); // Run every minute
+  console.log(`Server running on port ${PORT}`);
 });
 
 // Export io instance for use in other modules

@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Start server on 3001",
+			"command": "bash -lc 'cd server && npm install && PORT=3001 npm run dev'",
+			"args": [],
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		}
+	]
+}

@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CreditCard, DollarSign } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 const QuickPay: React.FC = () => {
   const [amount, setAmount] = useState('1000');
 
   const handlePayment = () => {
-    const url = `http://localhost:3002/api/payments/custom-pay?amount=${amount}&customerName=Test User&customerEmail=test@example.com&description=Quick Payment Test`;
+    const url = `${API_BASE_URL}/payments/custom-pay?amount=${amount}&customerName=Test User&customerEmail=test@example.com&description=Quick Payment Test`;
     window.open(url, '_blank');
   };
 

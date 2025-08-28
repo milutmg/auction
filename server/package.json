@@ -41,7 +41,8 @@
     "validator": "^13.12.0",
     "sharp": "^0.33.3",
     "exifr": "^7.1.3",
-    "imghash": "^0.0.5"
+    "imghash": "^0.0.5",
+    "nodemailer": "^6.9.13"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.1",

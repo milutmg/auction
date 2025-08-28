@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -77,7 +76,7 @@ const Auctions = () => {
       });
 
       const auctionsResponse = await fetch(
-        `http://localhost:3002/api/auctions?${queryParams.toString()}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/auctions?${queryParams.toString()}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -106,7 +105,7 @@ const Auctions = () => {
 
   const fetchCategories = async () => {
     try {
-      const categoriesResponse = await fetch('http://localhost:3002/api/bids/categories');
+      const categoriesResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/bids/categories`);
       if (categoriesResponse.ok) {
         const categoriesData = await categoriesResponse.json();
         setCategories(categoriesData);

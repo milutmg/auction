@@ -11,6 +11,7 @@ const AuthCallback = () => {
     const token = urlParams.get('token');
     const userParam = urlParams.get('user');
     const error = urlParams.get('error');
+    const otpSent = urlParams.get('otp_sent');
 
     if (error) {
       toast({
@@ -32,6 +33,13 @@ const AuthCallback = () => {
           title: "Welcome!",
           description: "You have successfully signed in with Google.",
         });
+        
+        if (otpSent === '1') {
+          toast({
+            title: 'Temporary password sent',
+            description: 'We emailed you a one-time password for future email logins. Check your inbox.',
+          });
+        }
         
         // Redirect admin users to dashboard, regular users to home
         if (userData.role === 'admin') {

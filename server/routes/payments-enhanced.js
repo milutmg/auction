@@ -57,21 +57,43 @@ router.post('/orders/:orderId/pay', authenticateToken, async (req, res) => {
     const { payment_provider, payment_method, customer_info = {} } = req.body;
     const userId = req.user.id;
 
-    // Get order details
-    const orderResult = await db.query(`
-      SELECT o.*, a.title as auction_title, a.seller_id,
-             winner.email as winner_email, winner.full_name as winner_name
-      FROM orders o
-      JOIN auctions a ON o.auction_id = a.id
-      JOIN users winner ON o.buyer_id = winner.id
-      WHERE o.id = $1 AND o.buyer_id = $2
-    `, [orderId, userId]);
-
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Order not found or not accessible' });
+    let order;
+    try {
+      // Advanced schema (buyer_id, winning_bid_amount)
+      const orderResult = await db.query(`
+        SELECT o.*, a.title as auction_title, a.seller_id,
+               winner.email as winner_email, winner.full_name as winner_name
+        FROM orders o
+        JOIN auctions a ON o.auction_id = a.id
+        JOIN users winner ON o.buyer_id = winner.id
+        WHERE o.id = $1 AND o.buyer_id = $2
+      `, [orderId, userId]);
+      if (orderResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Order not found or not accessible' });
+      }
+      order = orderResult.rows[0];
+      order.__schema = 'advanced';
+    } catch (e) {
+      if (e.code !== '42703') throw e; // not undefined column, rethrow
+      // Basic schema fallback (winner_id, final_amount)
+      const orderResult = await db.query(`
+        SELECT o.*, a.title as auction_title, a.seller_id,
+               winner.email as winner_email, winner.full_name as winner_name,
+               o.final_amount as winning_bid_amount,
+               CASE WHEN o.status = 'paid' THEN 'paid' ELSE 'pending' END as payment_status,
+               o.status as order_status,
+               o.winner_id as buyer_id
+        FROM orders o
+        JOIN auctions a ON o.auction_id = a.id
+        JOIN users winner ON o.winner_id = winner.id
+        WHERE o.id = $1 AND o.winner_id = $2
+      `, [orderId, userId]);
+      if (orderResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Order not found or not accessible' });
+      }
+      order = orderResult.rows[0];
+      order.__schema = 'basic';
     }
-
-    const order = orderResult.rows[0];
 
     if (order.payment_status === 'paid') {
       return res.status(400).json({ error: 'Order is already paid' });
@@ -106,12 +128,30 @@ router.post('/orders/:orderId/pay', authenticateToken, async (req, res) => {
       }
     );
 
-    // Update order with transaction ID
-    await db.query(`
-      UPDATE orders 
-      SET payment_transaction_id = $1, payment_provider = $2, updated_at = NOW()
-      WHERE id = $3
-    `, [transaction.id, payment_provider, orderId]);
+    // Update order with transaction ID (support both schemas)
+    if (order.__schema === 'advanced') {
+      await db.query(`
+        UPDATE orders 
+        SET payment_transaction_id = $1, payment_provider = $2, updated_at = NOW()
+        WHERE id = $3
+      `, [transaction.id, payment_provider, orderId]);
+    } else {
+      // basic schema may not have payment_provider/payment_transaction_id; try update guardedly
+      try {
+        await db.query(`
+          UPDATE orders 
+          SET payment_transaction_id = $1, payment_method = $2, updated_at = NOW()
+          WHERE id = $3
+        `, [transaction.id, payment_provider, orderId]);
+      } catch (e) {
+        // Fallback minimal update
+        await db.query(`
+          UPDATE orders 
+          SET updated_at = NOW()
+          WHERE id = $1
+        `, [orderId]);
+      }
+    }
 
     res.json({
       success: true,

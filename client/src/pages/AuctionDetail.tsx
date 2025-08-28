@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -235,6 +234,14 @@ const AuctionDetail = () => {
     }
   };
 
+  const handlePayment = () => {
+    const base = import.meta.env.VITE_API_URL || '/api';
+    const amt = bids[0]?.amount || auction.current_bid || auction.starting_bid;
+    const amountNum = parseFloat(amt);
+    const amount = Number.isFinite(amountNum) ? amountNum : 0;
+    window.location.href = `${base}/payments/custom-pay?amount=${encodeURIComponent(amount.toFixed(2))}`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -259,10 +266,6 @@ const AuctionDetail = () => {
     isActive,
     isEnded
   });
-
-  const handlePayment = () => {
-    window.location.href = `/api/payments/pay?auction_id=${auction.id}`;
-  };
 
   return (
     <div className="min-h-screen flex flex-col">

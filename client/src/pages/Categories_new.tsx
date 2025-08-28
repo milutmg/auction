@@ -36,6 +36,8 @@ const getCategoryImage = (categoryName: string): string => {
   return imageMap[categoryName] || 'https://images.unsplash.com/photo-1566312581307-d6bb3f6b2311?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 const Categories = () => {
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -48,7 +50,7 @@ const Categories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3002/api/categories');
+      const response = await fetch(`${API_BASE_URL}/categories`);
       if (response.ok) {
         const data = await response.json();
         setCategories(data);

@@ -6,6 +6,7 @@ const PaymentFailed: React.FC = () => {
   const [searchParams] = useSearchParams();
   const error = searchParams.get('error');
   const auctionId = searchParams.get('auction_id');
+  const amount = searchParams.get('amount');
 
   const getErrorMessage = (errorCode: string | null) => {
     switch (errorCode) {
@@ -50,9 +51,9 @@ const PaymentFailed: React.FC = () => {
         </div>
 
         <div className="flex space-x-4">
-          {auctionId && (
+          {(amount || auctionId) && (
             <a
-              href={`/api/payments/pay?auction_id=${auctionId}`}
+              href={`${import.meta.env.VITE_API_URL || '/api'}/payments/custom-pay?${amount ? `amount=${encodeURIComponent(amount)}` : `order_id=${encodeURIComponent(auctionId || '')}`}`}
               className="flex-1 bg-amber-600 text-white py-2 px-4 rounded-md text-center hover:bg-amber-700 transition-colors"
             >
               Try Again

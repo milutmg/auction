@@ -46,6 +46,8 @@ interface Category {
   description: string;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 const AuctionsFixed: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -81,7 +83,7 @@ const AuctionsFixed: React.FC = () => {
   const makeApiCall = async (endpoint: string, options = {}) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3002/api${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { 'Authorization': `Bearer ${token}` }),

@@ -39,6 +39,9 @@ const PaymentDashboardFixed: React.FC = () => {
     total_amount: 0
   });
 
+  // New: API base for redirects to backend HTML form endpoints
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
   useEffect(() => {
     if (user) {
       loadPaymentData();
@@ -48,7 +51,7 @@ const PaymentDashboardFixed: React.FC = () => {
   const makeApiCall = async (endpoint: string, options = {}) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3002/api${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
           ...(token && { 'Authorization': `Bearer ${token}` }),
@@ -142,6 +145,36 @@ const PaymentDashboardFixed: React.FC = () => {
     }
   };
 
+  // New: Initiate eSewa redirect via backend
+  const initiateEsewaRedirect = async () => {
+    try {
+      // Prefer using first pending order so backend can derive the correct amount
+      const pending = payments.find(p => p.status === 'pending');
+
+      let redirectUrl: string;
+      if (pending && pending.id) {
+        // Let backend compute amount from order
+        redirectUrl = `${API_BASE_URL}/payments/custom-pay?order_id=${encodeURIComponent(pending.id)}`;
+      } else {
+        // Fallback: ask user for amount (demo/testing)
+        const defaultAmount = 100;
+        const input = window.prompt('Enter amount to pay with eSewa (NPR):', String(defaultAmount));
+        if (!input) return;
+        const amount = parseFloat(input);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          toast({ title: 'Invalid amount', description: 'Please enter a valid amount', variant: 'destructive' });
+          return;
+        }
+        redirectUrl = `${API_BASE_URL}/payments/custom-pay?amount=${encodeURIComponent(amount.toFixed(2))}`;
+      }
+
+      toast({ title: 'Redirecting', description: 'Opening eSewa gateway...' });
+      window.location.href = redirectUrl;
+    } catch (e: any) {
+      toast({ title: 'Payment error', description: e.message || 'Failed to initiate eSewa payment', variant: 'destructive' });
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -162,10 +195,12 @@ const PaymentDashboardFixed: React.FC = () => {
       paid: 'default',
       pending: 'secondary',
       failed: 'destructive'
-    };
+    } as const;
+
+    const variant = (variants[status as keyof typeof variants] ?? 'secondary') as 'default' | 'destructive' | 'outline' | 'secondary';
 
     return (
-      <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>
+      <Badge variant={variant}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
@@ -328,27 +363,33 @@ const PaymentDashboardFixed: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
+            {/* eSewa tile clickable to initiate redirect */}
+            <button
+              type="button"
+              onClick={initiateEsewaRedirect}
+              className="flex items-center gap-3 p-3 border rounded-lg hover:border-green-600 hover:bg-green-50 transition-colors cursor-pointer"
+              aria-label="Pay with eSewa"
+            >
               <div className="w-8 h-8 bg-green-600 rounded text-white text-sm flex items-center justify-center font-bold">eS</div>
               <span className="text-sm font-medium">eSewa</span>
-            </div>
+            </button>
             
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
+            <div className="flex items-center gap-3 p-3 border rounded-lg opacity-60">
               <div className="w-8 h-8 bg-purple-600 rounded text-white text-sm flex items-center justify-center font-bold">K</div>
-              <span className="text-sm font-medium">Khalti</span>
+              <span className="text-sm font-medium">Khalti (coming soon)</span>
             </div>
             
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
+            <div className="flex items-center gap-3 p-3 border rounded-lg opacity-60">
               <CreditCard className="w-8 h-8 text-blue-600" />
-              <span className="text-sm font-medium">Stripe</span>
+              <span className="text-sm font-medium">Stripe (coming soon)</span>
             </div>
             
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
+            <div className="flex items-center gap-3 p-3 border rounded-lg opacity-60">
               <div className="w-8 h-8 bg-blue-400 rounded text-white text-sm flex items-center justify-center font-bold">PP</div>
-              <span className="text-sm font-medium">PayPal</span>
+              <span className="text-sm font-medium">PayPal (coming soon)</span>
             </div>
             
-            <div className="flex items-center gap-3 p-3 border rounded-lg">
+            <div className="flex items-center gap-3 p-3 border rounded-lg opacity-60">
               <div className="w-8 h-8 bg-gray-600 rounded text-white text-sm flex items-center justify-center font-bold">BT</div>
               <span className="text-sm font-medium">Bank Transfer</span>
             </div>

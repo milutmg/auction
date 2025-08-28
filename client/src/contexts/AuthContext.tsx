@@ -1,8 +1,7 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import apiService from '@/services/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 interface AuthContextType {
   user: any;
@@ -102,7 +101,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
-      // Redirect to backend Google OAuth endpoint
+      // Ask backend if Google OAuth is properly configured
+      const res = await fetch(`${API_BASE_URL}/auth/google/config`, { credentials: 'include' }).catch(() => null);
+      if (res && res.ok) {
+        const cfg = await res.json();
+        if (cfg.enabled) {
+          window.location.href = `${API_BASE_URL}/auth/google`;
+          return { error: null };
+        }
+        // If not enabled but not production, backend will serve mock at /auth/google
+        if (cfg.environment !== 'production') {
+          window.location.href = `${API_BASE_URL}/auth/google`;
+          return { error: null };
+        }
+        return { error: { message: 'Google sign-in is not configured.' } };
+      }
+      // Fallback: try the endpoint (dev mock may still work)
       window.location.href = `${API_BASE_URL}/auth/google`;
       return { error: null };
     } catch (error) {

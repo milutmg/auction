@@ -61,46 +61,59 @@ const NotificationDropdown = () => {
     if (!user) return;
     fetchNotifications();
 
-    socketService.connect().then(sock => {
-      const bidApproved = (d: any) => { if (d.bidderId === user.id) pushNotification({
-        id: 'bid-approved-' + d.bidId,
-        title: 'Bid Approved',
-        message: `Your bid ($${d.amount}) was approved on auction #${d.auctionId}.`,
-        type: 'bid_approved', created_at: new Date().toISOString()
-      }); };
-      const auctionApproved = (d: any) => { if (d.sellerId === user.id) pushNotification({
-        id: 'auction-approved-' + d.auctionId,
-        title: 'Auction Approved',
-        message: `Your auction "${d.title}" is now live for bidding.`,
-        type: 'auction_approved', created_at: new Date().toISOString()
-      }); };
-      const paymentCompleted = (d: any) => { if (d.userId === user.id) pushNotification({
-        id: 'payment-completed-' + d.auctionId,
-        title: 'Payment Successful',
-        message: `Payment completed for auction #${d.auctionId}.`,
-        type: 'payment_success', created_at: new Date().toISOString()
-      }); };
-      const paymentRequired = (d: any) => { if (d.userId === user.id) pushNotification({
-        id: 'payment-required-' + d.auctionId,
-        title: 'Payment Required',
-        message: `Please complete payment for "${d.title}" ($${d.amount}).`,
-        type: 'payment_required', created_at: new Date().toISOString()
-      }); };
+    const bidApproved = (d: any) => { if (d.bidderId === user.id) pushNotification({
+      id: 'bid-approved-' + d.bidId,
+      title: 'Bid Approved',
+      message: `Your bid ($${d.amount}) was approved on auction #${d.auctionId}.`,
+      type: 'bid_approved', created_at: new Date().toISOString()
+    }); };
+    const auctionApproved = (d: any) => { if (d.sellerId === user.id) pushNotification({
+      id: 'auction-approved-' + d.auctionId,
+      title: 'Auction Approved',
+      message: `Your auction "${d.title}" is now live for bidding.`,
+      type: 'auction_approved', created_at: new Date().toISOString()
+    }); };
+    const paymentCompleted = (d: any) => { if (d.userId === user.id) pushNotification({
+      id: 'payment-completed-' + d.auctionId,
+      title: 'Payment Successful',
+      message: `Payment completed for auction #${d.auctionId}.`,
+      type: 'payment_success', created_at: new Date().toISOString()
+    }); };
+    const paymentRequired = (d: any) => { if (d.userId === user.id) pushNotification({
+      id: 'payment-required-' + d.auctionId,
+      title: 'Payment Required',
+      message: `Please complete payment for "${d.title}" ($${d.amount}).`,
+      type: 'payment_required', created_at: new Date().toISOString()
+    }); };
 
+    // Attach to current socket if available
+    const sock = socketService.getSocket();
+    if (sock) {
       socketService.onBidApproved(bidApproved);
       sock.on('auction-approved', auctionApproved);
       socketService.onPaymentCompleted(paymentCompleted);
       socketService.onPaymentRequired(paymentRequired);
+    }
 
-      socketService.onReconnect(() => { fetchNotifications(); });
+    // Re-attach on reconnect
+    const reattach = () => {
+      fetchNotifications();
+      const s = socketService.getSocket();
+      if (!s) return;
+      socketService.onBidApproved(bidApproved);
+      s.on('auction-approved', auctionApproved);
+      socketService.onPaymentCompleted(paymentCompleted);
+      socketService.onPaymentRequired(paymentRequired);
+    };
+    socketService.onReconnect(reattach);
 
-      return () => {
-        socketService.offBidApproved(bidApproved);
-        sock.off('auction-approved', auctionApproved);
-        socketService.offPaymentCompleted(paymentCompleted);
-        socketService.offPaymentRequired(paymentRequired);
-      };
-    }).catch(()=>{});
+    return () => {
+      const s = socketService.getSocket();
+      socketService.offBidApproved(bidApproved);
+      s?.off('auction-approved', auctionApproved);
+      socketService.offPaymentCompleted(paymentCompleted);
+      socketService.offPaymentRequired(paymentRequired);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -383,11 +396,9 @@ const Navbar = () => {
 
   // Listen to real-time payment-completed events to flash success indicator
   useEffect(() => {
-    socketService.connect().then(() => {
-      const handler = (d:any) => { setRecentPaymentSuccess({ ts: Date.now(), auctionId: d.auctionId }); };
-      socketService.onPaymentCompleted(handler);
-      return () => socketService.offPaymentCompleted(handler);
-    }).catch(()=>{});
+    const handler = (d:any) => { setRecentPaymentSuccess({ ts: Date.now(), auctionId: d.auctionId }); };
+    socketService.onPaymentCompleted(handler);
+    return () => socketService.offPaymentCompleted(handler);
   }, []);
 
   // Auto-clear after 3 minutes
@@ -413,19 +424,15 @@ const Navbar = () => {
       socketService.fetchPendingPaymentEvents(user.id).then(ev => setPendingPayments(ev.length));
     });
 
-    // Ensure socket connection via shared service
-    socketService.connect().then(() => {
-      if (!active) return;
-      const reqH = (d: any) => { if (user && d.userId === user.id) setPendingPayments(p => p + 1); };
-      const compH = (d: any) => { if (user && d.userId === user.id) setPendingPayments(p => Math.max(0, p - 1)); };
-      socketService.onPaymentRequired(reqH);
-      socketService.onPaymentCompleted(compH);
-      return () => {
-        socketService.offPaymentRequired(reqH);
-        socketService.offPaymentCompleted(compH);
-      };
-    }).catch(()=>{});
-    return () => { active = false; };
+    const reqH = (d: any) => { if (user && d.userId === user.id) setPendingPayments(p => p + 1); };
+    const compH = (d: any) => { if (user && d.userId === user.id) setPendingPayments(p => Math.max(0, p - 1)); };
+    socketService.onPaymentRequired(reqH);
+    socketService.onPaymentCompleted(compH);
+    return () => {
+      active = false;
+      socketService.offPaymentRequired(reqH);
+      socketService.offPaymentCompleted(compH);
+    };
   }, [user]);
 
   const toggleMobileMenu = () => { setIsMobileMenuOpen(o=>!o); };
